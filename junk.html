@@ -24753,11 +24753,11 @@
     function checkVR(i){
     /* checks if a value should be decoded in ASCII or stay in HEX*/
       ascii = ["CS", "SH", "LO", "ST", "LT", "UT", "AE", "PN", "UI", "DA", "TM", "DT", "AS", "IS", "DS"]
-      exceptions = ["OB", "OW", "OF", "SQ", "UT", "UN"];// even if they are encoded explicitly, their length is stored in 4 bytes
+      exceptions = ["SS", "US", "SL", /*"UL",*/ "AT", "FL", "FD", "OB", "OW", "OF", "SQ", "UT", "UN"];// even if they are encoded explicitly, their length is stored in 4 bytes
       isASCII = (ascii.indexOf(dicomAttr[i].VR) != -1) ? 1 : 0;
       isException = (exceptions.indexOf(dicomAttr[i].VR) != -1) ? 1 : 0;
       return [isASCII, isException];
-    }
+    } 
 
     function getEncoding(value){
       const encoding = [
@@ -24780,11 +24780,9 @@
         tag = tag.toUpperCase();
         console.log(`${group}${element}`);
         let changeEncoding = (group != "0002") ? 1 : 0;
-        for(i=0; i<dicomAttr.length; i++){ //TO DO 
-          console.log(`warunek: ${dicomAttr[i].Tag === tag}`);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+        for(i=0; i<dicomAttr.length; i++){ //TO DO                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
           if(dicomAttr[i].Tag === tag){
             const name = dicomAttr[i].Name;
-            console.log(`name: ${name}`);
             const [isASCII, isException] = checkVR(i);
             index += 4;
             console.log(`name: ${name} VR: ${dicomAttr[i].VR}`);
@@ -24815,7 +24813,6 @@
         } else {
           value = hexToInt(dicom.slice(index, index + length).join(''));
         }
-        console.log(`value: ${hexToInt(value)}`);
         index += length;
         return [index, value];
     }
@@ -24847,12 +24844,14 @@
         num = hexToInt(num);
         num = Math.trunc(num/256);
         num = Number(num).toString(16);
+        if (num.length < 2) {
+          num = "0" + num;
+        }
         pic.push("#"+num+num+num);
-        //console.log("#" + num+num+num);
         //console.log(pic[-1]);
         //console.log(hex2B(Number(hexToInt(pixelData.slice(i, i+2))%16).toString(16)*3));
       }
-      console.log(pic);
+      //console.log(pic);
       return pic;
     }
     
@@ -24871,6 +24870,7 @@
             const dicomJSON = dicomToJSON(dicm);
             console.log(dicomJSON);
             let picToDisp = fixGreyscale(dicomJSON["Pixel Data"]); // start from here
+            //picToDisp = dicomJSON["Pixel Data"];
             var canvas = document.getElementById('dicomImage');
             // dicomJSON["Pixel Data"] = littleToBig(dicomJSON["Pixel Data"]); ???
             console.log(dicomJSON["Rows"]);
