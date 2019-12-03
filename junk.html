@@ -24719,7 +24719,7 @@
     }
     return hex;
   }
-
+//we are not always dealin g with little endian. needs to be fixed!!!!!!!!!!!
   function hexToInt(hex) {
     hex = littleToBig(hex);
     return parseInt(hex, 16);
@@ -24842,62 +24842,97 @@
     return dicomJSON;
   }
 
-  function u2(hex) {
-    hex = hexToInt(hex).toString(2);
-    let max = 0;
-    // naprawic obcinane zera !!!!! i zmapować ujemne na dodatnie
-    //hex = (hex.slice(0)=="1") ? "1111111111111111"+hex : "0000000000000000" + hex;
-    if (hex.slice(0, 1) === "1" && hex.length == 16) {
-      hex = hex.replace(/[01]/g, function ($1) {
-        return $1 === '0' ? '1' : '0'
-      });
-      hex = parseInt(hex, 2);
-      if(hex<0){
-        console.log(`artefakty ${hex}`);
-      }
-      hex = -(hex + 1);
-      if (hex < -160) {
-        hex = -160;
-      }
-
-      //console.log(hex);
-    } else {
-      hex = parseInt(hex, 2);
-      if (hex > 240) {
-        hex = 240;
+  function u2(pixelDataArr) {
+    /* converts pixelData from u2 to signed integer
+    input: array of hex strings
+    output: array of numbers
+    */
+    let bits=[];
+    for(let i=0; i< pixelDataArr.length; i++){
+      bits[i] = parseInt(pixelDataArr[i], 16).toString(2);
+      // if number is negative
+      if (bits[i].slice(0, 1) === "1" && bits[i].length == 16) {
+        bits[i] = bits[i].replace(/[01]/g, function ($1) {
+          return $1 === '0' ? '1' : '0'
+        });
+        bits[i] = parseInt(bits[i], 2);
+        bits[i] = -(bits[i] + 1); // check if it works; add change 0 to -32768
+        bits[i] = (bits[i]===0) ? -32768 : bits[i]; // change it to be universal //to do
+      } else {
+        bits[i] = parseInt(bits[i], 2);
       }
     }
-
-    hex += 160;
-
-    hex = Math.floor((hex * 255) / 400);
-    if(hex>255 || hex<0){
-      console.log(`constrains error ${hex}`);
-
-    }
-    hex = (hex).toString(16);
-    return hex;
+    return bits;
   }
 
-  function fixGreyscaleV2(ctx, rows, columns, pixelData) {
-    let color;
-    var min = 100000
-    var max = 0
-    let paleta = [];
-    mniejsze = false
+  function adjustWindow(pixToDispArr, windowCenter, windowWidth){
+    /* Adjust the values to those the range important for diagnosis
+    input: array of numbers
+    output: array of numbers
+    */
+    const lowest = windowCenter - windowWidth/2; // lowest possible pixel value, all pixels below this value will be represented as total black
+    const highest = windowCenter + windowWidth/2; // highest possible pixel value, all pixels above this value will be represented as white
+    const range = Math.abs(lowest) + Math.abs(highest);
+    
+    for(let i=0; i<pixToDispArr.length; i++){
+      if(pixToDispArr[i]<lowest){
+        pixToDispArr[i] = lowest;
+      } else if(pixToDispArr[i]>highest){
+        pixToDispArr[i] = highest;
+      }
+      pixToDispArr[i] = (lowest<0) ? pixToDispArr[i]+Math.abs(lowest) : pixToDispArr[i]; // make sure all numbers are positive 
+      pixToDispArr[i] = Math.floor(pixToDispArr[i]*255/range); // rescale the number, so that the values range from 0-255
+    }
+    return pixToDispArr;
+  }
+
+  function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRepresentation, rescaleSlope, rescaleIntercept, windowCenter, windowWidth, photometricInterpretation){
+    bitsAllocated = parseInt(bitsAllocated);
+    bitsStored = parseInt(bitsStored);
+    highBit = parseInt(highBit);
+    pixelRepresentation = parseInt(pixelRepresentation);
+    rescaleSlope = parseInt(rescaleSlope);
+    rescaleIntercept = parseInt(rescaleIntercept);
+    windowCenter = parseInt(windowCenter);
+    windowWidth = parseInt(windowWidth);
+
+    let pixelDataArr = [];
+    // Convert PixelData hex string into array of pixels
+    let hexAllocated = Math.ceil(bitsAllocated/8)*2; // one byte is two hex digits
+    let hexStored = Math.ceil(bitsStored/8)*2;
+    for(let i=0; i<pixelData.length; i+=hexAllocated){
+      pixelDataArr.push(pixelData.slice(i, i+hexStored));
+    }
+    //if  highBit==bitsStored it's in BigEndian,  lse if highBit==0, then it is in LittleEndian, 
+    pixelDataArr = (highBit+1===bitsStored) ? pixelDataArr.map(x => littleToBig(x)) : pixelDataArr;
+    // if pixelRepresentation=0, pixels are stored as unsigned integers, else if if pixelRepresentation=1 they are encoded in two's complement
+    pixelDataArr = (pixelRepresentation===0) ? parseInt(pixelDataArr, 16) : u2(pixelDataArr);
+    // from now on pixelDataArr is array of numbers
+    pixelDataArr = pixelDataArr.map(x => rescaleSlope*x+rescaleIntercept);
+    // from now we are going to operate on a new array- pixToDispArr, because we will start processing the image for the purpose of displaying it in a browser
+    // pixelDataArr doesn't change
+    let pixToDispArr = adjustWindow(pixelDataArr, windowCenter, windowWidth);
+    // so far we support only monochrome1 and monochrome2
+    // MONOCHROME1 indicates that the greyscale ranges from bright to dark with ascending pixel values, whereas MONOCHROME2 ranges from dark to bright with ascending pixel values.
+    if (photometricInterpretation === "MONOCHROME1"){
+      pixToDispArr = pixToDispArr.map(x => 255-x); 
+    }
+    pixToDispArr = pixToDispArr.map(x => x.toString(16));
+    pixToDispArr = pixToDispArr.map(x => "#"+x+x+x);
+    //console.log(pixToDispArr.filter(x => x!="#000" && x!="#FFFFFF"));
+    // CANT RETURN TWO ARRAYS - FIX IT!!!!!!!!!!
+    return pixToDispArr;
+  }
+
+  function displayImage(ctx, rows, columns, pixToDispArr) {
+    rows = parseInt(rows);
+    columns = parseInt(columns);
     for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < columns * 4 - 2; j += 4) {
-        color = pixelData.slice(512 * 4 * i + j + 0, 512 * 4 * i + j + 4);
-        color = u2(color);
-        if (!paleta.includes(parseInt(color, 16))) {
-          paleta.push(parseInt(color, 16));
-        }
-        ctx.fillStyle = "#" + color + color + color;
-        //console.log("#" + dicomJSON["Pixel Data"].slice(2*i*j, 2*i*j+2));
-        ctx.fillRect(i, j / 4, 1, 1);
+      for (let j = 0; j < columns ; j += 1) {
+        ctx.fillStyle= pixToDispArr[rows*i + j];
+        ctx.fillRect(i, j, 1, 1);
       }
     }
-    console.log(paleta.sort());
   }
 
   a = document.getElementById("cos");
@@ -24914,13 +24949,12 @@
       console.log(dicm);
       const dicomJSON = dicomToJSON(dicm);
       console.log(dicomJSON);
-      //let picToDisp = fixGreyscale(dicomJSON["Pixel Data"]); // start from here
-      //picToDisp = dicomJSON["Pixel Data"];
+      pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"], dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"], dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"], dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
+      console.log(pixToDispArr);
       var canvas = document.getElementById('dicomImage');
-      // dicomJSON["Pixel Data"] = littleToBig(dicomJSON["Pixel Data"]); ???
       if (canvas.getContext) {
         var ctx = canvas.getContext('2d');
-        fixGreyscaleV2(ctx, dicomJSON["Rows"], dicomJSON["Columns"], dicomJSON["Pixel Data"]);
+        displayImage(ctx, dicomJSON["Rows"], dicomJSON["Columns"], pixToDispArr);
 
 
       } else {
