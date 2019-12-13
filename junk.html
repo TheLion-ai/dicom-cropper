@@ -5,15 +5,18 @@
   <TITLE>sprawdzmy dicomy</TITLE>
 </HEAD>
 
-<BODY>
-  <div class="container">
+<BODY style="margin: 20px;">
+
     <p>Zaraz spróbuję wyświetlić dicom.</p>
     <h1>Tu powinien być dicom.</h1>
+    <p id="coordinates"></p>
     <input type="file" id="cos" />
-  </div>
-  <canvas id="dicomImage" width="512" height="512">
-    Image cannot be displayed. Use better browser.
-  </canvas>
+    <canvas id="dicomImage" width="512" height="512" style="margin:0px;">
+        Image cannot be displayed. Use better browser.
+    </canvas>
+    <div id="selected" style="background-color: blueviolet; opacity: 0.25; width: 100px; height: 100px">basia</div>
+
+  
 </BODY>
 <script>
   let dicomAttr = [{
@@ -24707,7 +24710,7 @@
       "Name1": ""
     }
   ];
-
+  
   function littleToBig(hex) {
     /*changes Little Endian to Big Endian*/
     if (hex.length > 2) { // Assuming little endian encoding
@@ -24896,7 +24899,7 @@
     windowCenter = parseInt(windowCenter);
     windowWidth = parseInt(windowWidth);
 
-    let pixelDataArr = [];
+    pixelDataArr = [];
     // Convert PixelData hex string into array of pixels
     let hexAllocated = Math.ceil(bitsAllocated/8)*2; // one byte is two hex digits
     let hexStored = Math.ceil(bitsStored/8)*2;
@@ -24911,16 +24914,18 @@
     pixelDataArr = pixelDataArr.map(x => rescaleSlope*x+rescaleIntercept);
     // from now we are going to operate on a new array- pixToDispArr, because we will start processing the image for the purpose of displaying it in a browser
     // pixelDataArr doesn't change
-    let pixToDispArr = adjustWindow(pixelDataArr, windowCenter, windowWidth);
+    pixToDispArr = Array.from(pixelDataArr);
+    pixToDispArr = adjustWindow(pixToDispArr, windowCenter, windowWidth);
     // so far we support only monochrome1 and monochrome2
     // MONOCHROME1 indicates that the greyscale ranges from bright to dark with ascending pixel values, whereas MONOCHROME2 ranges from dark to bright with ascending pixel values.
     if (photometricInterpretation === "MONOCHROME1"){
       pixToDispArr = pixToDispArr.map(x => 255-x); 
     }
-    pixToDispArr = pixToDispArr.map(x => x.toString(16));
-    pixToDispArr = pixToDispArr.map(x => "#"+x+x+x);
+    pixToDispArr = pixToDispArr.map(x => x.toString(16).toUpperCase().padStart(2, "0"));
+    pixToDispArr = pixToDispArr.map(x => "#" + x.repeat(3));
     //console.log(pixToDispArr.filter(x => x!="#000" && x!="#FFFFFF"));
     // CANT RETURN TWO ARRAYS - FIX IT!!!!!!!!!!
+    window.pixelDataArr = pixelDataArr;
     return pixToDispArr;
   }
 
@@ -24934,8 +24939,19 @@
       }
     }
   }
+  
+  function showCoords(canvas, event){
+    var rect = canvas.getBoundingClientRect();
+    var x = event.clientX - Math.floor(rect.left);
+    var y = event.clientY - Math.floor(rect.top);
+    let value = pixelDataArr[y*512 + x];
+    let value2 = pixToDispArr[y*512 + x];
+    var coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
+    document.getElementById("coordinates").innerHTML = coords;
+  }
 
   a = document.getElementById("cos");
+  dragElement(document.getElementById("selected"));
   a.addEventListener('change', function () {
     console.log("CDF");
     file = a.files[0];
@@ -24949,13 +24965,15 @@
       console.log(dicm);
       const dicomJSON = dicomToJSON(dicm);
       console.log(dicomJSON);
-      pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"], dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"], dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"], dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
+      let pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"], dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"], dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"], dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
       console.log(pixToDispArr);
       var canvas = document.getElementById('dicomImage');
       if (canvas.getContext) {
         var ctx = canvas.getContext('2d');
         displayImage(ctx, dicomJSON["Rows"], dicomJSON["Columns"], pixToDispArr);
-
+        canvas.addEventListener('click', function(even){
+          showCoords(canvas,even);
+        }, false);
 
       } else {
         // canvas-unsupported code here
