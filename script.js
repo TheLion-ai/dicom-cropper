@@ -227,10 +227,10 @@ function displayImage(ctx, rows, columns, pixToDispArr) {
     }
 }
 
-function showCoords(canvas, event) {
-    var rect = canvas.getBoundingClientRect();
-    var x = event.clientX - Math.floor(rect.left);
-    var y = event.clientY - Math.floor(rect.top);
+function showCoords(rect, x, y) {
+
+    var x = Math.floor(x- rect.left)
+    var y = Math.floor(y -rect.top)
     let value = pixelDataArr[y * 512 + x];
     let value2 = pixToDispArr[y * 512 + x];
     var coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
@@ -240,6 +240,11 @@ function showCoords(canvas, event) {
 function loadData() {
     a = document.getElementById("cos");
     a.addEventListener('change', function () {
+        let guideline = document.getElementById('guideline');
+        guideline.innerText = 'Uploading file';
+
+        let guideline2 = document.getElementById('guideline2');
+        guideline2.innerText = '';
         console.log("CDF");
         file = a.files[0];
         console.log(a.files);
@@ -259,17 +264,21 @@ function loadData() {
             if (canvas.getContext) {
                 var ctx = canvas.getContext('2d');
                 displayImage(ctx, dicomJSON["Rows"], dicomJSON["Columns"], pixToDispArr);
-                canvas.addEventListener('click', function (even) {
-                    showCoords(canvas, even);
-                }, false);
+
 
             } else {
                 // canvas-unsupported code here
             }
+            let canvasDiv = document.getElementById('canvasDiv');
+            canvasDiv.removeAttribute('hidden')
             let upload= document.getElementById('upload');
             upload.setAttribute('hidden','hidden');
             let guideline = document.getElementById('guideline');
             guideline.innerText = 'Select tumor area';
+
+            let guideline2 = document.getElementById('guideline2');
+            guideline2.innerText = 'Drag the white box over the kidney with the tumor, try to center the kidney in the box';
+
             rect = canvas.getBoundingClientRect()
             let selectArea = document.getElementById('selectArea');
             selectArea.removeAttribute('hidden')
@@ -289,9 +298,21 @@ function loadData() {
 
 
 loadData();
+window.onresize = onResize
+
+function onResize() {
+    let canvas = document.getElementById('dicomImage');
+    rect = canvas.getBoundingClientRect()
+
+    let selectArea = document.getElementById('selectArea');
+    selectArea.removeAttribute('hidden')
+
+    selectArea.style.left = rect.left + "px";
+    selectArea.style.top = rect.top + "px";
+    dragElement(selectArea,rect,rect);
 
 
-
+}
 
 
 function dragElement(elmnt,rect) {
@@ -344,15 +365,16 @@ function dragElement(elmnt,rect) {
 
         x = elmnt.offsetLeft - pos1
         y = elmnt.offsetTop - pos2
-        if(x> rect.left && x+102< rect.right && y> rect.top && y+102<rect.bottom) {
+        if(x> rect.left  && x+100< rect.right+1 && y> rect.top -1 && y+100<rect.bottom+1) {
             elmnt.style.top = y + "px";
             elmnt.style.left = x + "px";
         }
 
     }
 
-    function closeDragElement() {
+    function closeDragElement(e) {
         /* stop moving when mouse button is released:*/
+        showCoords(rect,elmnt.offsetLeft+ 50, elmnt.offsetTop+50)
         document.onmouseup = null;
         document.onmousemove = null;
     }

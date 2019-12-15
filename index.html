@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<HTML>
+<HTML class="uk-background-secondary">
 
 <HEAD>
     <TITLE>sprawdzmy dicomy</TITLE>
@@ -12,10 +12,10 @@
 
 </HEAD>
 
-<BODY>
-<nav class="uk-navbar-container uk-background-primary" uk-navbar>
+<BODY class="uk-light  uk-background-secondary onresize=" Resizer()">
+<nav class="uk-navbar-containe  uk-background-secondary" uk-navbar>
 
-    <div class="uk-navbar-left">
+    <div class="uk-navbar-left uk-background-secondary">
 
         <ul class="uk-navbar-nav">
             <li class="uk-active"><a href="#">Dicom Viewer</a></li>
@@ -26,10 +26,12 @@
 
 
 </nav>
-<h1 id="guideline" class="uk-heading-medium uk-text-center">1. Upload dicom file</h1>
-<p id="coordinates"></p>
+<h1 id="guideline" class="uk-heading-medium uk-text-center uk-margin-small">Upload dicom file</h1>
+<h3 id="guideline2" class="uk-text-center uk-margin-small">Click the button below to select dicom file from your
+    computer</h3>
 
-<div id ='upload' class="js-upload uk-text-center uk-width-4-4@m uk-margin-auto uk-margin-large" uk-form-custom>
+
+<div id='upload' class="js-upload uk-text-center uk-width-4-4@m uk-margin-auto uk-margin-large" uk-form-custom>
     <input type="file" id="cos">
     <button class="uk-button uk-button-default" type="button" tabindex="-1">Select dicom file</button>
 </div>
@@ -37,14 +39,19 @@
 
 
 <!--<div id="selected" style="background-color: blueviolet; opacity: 0.25; width: 100px; height: 100px">basia</div>-->
-<div uk-grid="" class="uk-grid uk-text-center">
-    <div class="uk-width-1-3@m uk-first-column"></div>
-    <div class="uk-width-1-3@m"><canvas id="dicomImage" width="512" height="512" class="uk-margin-auto uk-margin-large">
+<div class="uk-card  uk-card-body uk-text-center uk-padding-small" id="canvasDiv" hidden>
+    <canvas id="dicomImage" width="512" height="512" class="uk-margin-small">
         Image cannot be displayed. Use better browser.
-    </canvas></div>
-    <div class="uk-width-1-3@m"></div>
-
+    </canvas>
+    <p class="uk-text-center uk-margin-small " id="coordinates"></p>
+    <h3 class="uk-text-center uk-margin-small">Select tumor type</h3>
+    <select class="uk-select uk-text-center uk-margin-small" style="width: 512px;">
+        <option>Option 01</option>
+        <option>Option 02</option>
+    </select>
+    <button class="uk-button uk-button-default">Sent image</button>
 </div>
+
 
 <div id="selectArea" hidden>
 </div>
@@ -55,10 +62,21 @@
         z-index: 9;
         background-color: #f1f1f1;
         text-align: center;
-        border: 1px solid mediumpurple;
         width: 100px;
         height: 100px;
         opacity: 0.5;
+    }
+
+    canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        width: 512px;
+        height: 512px;
+        min-width: 512px;
+        min-height: 512px;
     }
 
 </style>
