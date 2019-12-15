@@ -379,3 +379,14 @@ function dragElement(elmnt,rect) {
         document.onmousemove = null;
     }
 }
+
+function sentData() {
+    $.ajax({
+        url: 'http://google.com',
+        type: "GET",
+        data: JSON.stringify('{"test":"test"}'),
+        contentType: "application/json",
+    });
+
+
+}
