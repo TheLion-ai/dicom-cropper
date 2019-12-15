@@ -1,0 +1,69 @@
+<!DOCTYPE HTML>
+<HTML>
+
+<HEAD>
+    <TITLE>sprawdzmy dicomy</TITLE>
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/css/uikit.min.css"/>
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit-icons.min.js"></script>
+
+</HEAD>
+
+<BODY>
+<nav class="uk-navbar-container uk-background-primary" uk-navbar>
+
+    <div class="uk-navbar-left">
+
+        <ul class="uk-navbar-nav">
+            <li class="uk-active"><a href="#">Dicom Viewer</a></li>
+
+        </ul>
+
+    </div>
+
+
+</nav>
+<h1 id="guideline" class="uk-heading-medium uk-text-center">1. Upload dicom file</h1>
+<p id="coordinates"></p>
+
+<div id ='upload' class="js-upload uk-text-center uk-width-4-4@m uk-margin-auto uk-margin-large" uk-form-custom>
+    <input type="file" id="cos">
+    <button class="uk-button uk-button-default" type="button" tabindex="-1">Select dicom file</button>
+</div>
+<progress id="js-progressbar" class="uk-progress" value="0" max="100" hidden></progress>
+
+
+<!--<div id="selected" style="background-color: blueviolet; opacity: 0.25; width: 100px; height: 100px">basia</div>-->
+<div uk-grid="" class="uk-grid uk-text-center">
+    <div class="uk-width-1-3@m uk-first-column"></div>
+    <div class="uk-width-1-3@m"><canvas id="dicomImage" width="512" height="512" class="uk-margin-auto uk-margin-large">
+        Image cannot be displayed. Use better browser.
+    </canvas></div>
+    <div class="uk-width-1-3@m"></div>
+
+</div>
+
+<div id="selectArea" hidden>
+</div>
+
+<style>
+    #selectArea {
+        position: absolute;
+        z-index: 9;
+        background-color: #f1f1f1;
+        text-align: center;
+        border: 1px solid mediumpurple;
+        width: 100px;
+        height: 100px;
+        opacity: 0.5;
+    }
+
+</style>
+</BODY>
+<script type="text/javascript" src="dict.js"></script>
+<script type="text/javascript" src="script.js"></script>
+
+</HTML>
