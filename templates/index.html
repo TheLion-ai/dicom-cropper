@@ -1,0 +1,154 @@
+<!DOCTYPE HTML>
+<HTML  style="min-height: 100%;margin: 0;margin: 0;background-color:#222222 !important;">
+
+<HEAD>
+    <TITLE>Dicom viewer</TITLE>
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/css/uikit.min.css"/>
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit-icons.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+
+</HEAD>
+
+<BODY class="uk-light  uk-background-secondary" style="height: 100%;margin: 0;margin: 0">
+<nav class="uk-navbar-containe  uk-background-secondary" uk-navbar>
+
+    <div class="uk-navbar-left uk-background-secondary">
+
+        <ul class="uk-navbar-nav">
+            <li class="uk-active"><a href="#">Dicom Viewer</a></li>
+
+        </ul>
+
+    </div>
+
+
+</nav>
+
+<div id ='success' class="uk-margin uk-text-center" hidden>
+    <input class=" uk-form-success uk-input uk-text-center uk-form-width-large" type="text" placeholder="Data sent successfully" value="Data sent successfully" disabled style="color: #32d296;border-color: #32d296;">
+</div>
+<h1 id="guideline" class="uk-heading-medium uk-text-center uk-margin-small">Upload dicom file</h1>
+<h3 id="guideline2" class="uk-text-center uk-margin-small">Click the button below to select dicom file from your
+    computer</h3>
+
+
+<div id='upload' class="js-upload uk-text-center uk-width-4-4@m uk-margin-auto uk-margin-large" uk-form-custom>
+    <input type="file" id="cos">
+    <button class="uk-button uk-button-default" type="button" tabindex="-1">Select dicom file</button>
+</div>
+<progress id="js-progressbar" class="uk-progress" value="0" max="100" hidden></progress>
+
+
+<!--<div id="selected" style="background-color: blueviolet; opacity: 0.25; width: 100px; height: 100px">basia</div>-->
+<div class="uk-card  uk-card-body uk-text-center uk-padding-small" id="canvasDiv" hidden>
+
+
+    <canvas id="dicomImage" width="512" height="512" class="uk-margin-small">
+        Image cannot be displayed. Use better browser.
+    </canvas>
+    <p class="uk-text-center uk-margin-small " id="coordinates"></p>
+
+    <form class="uk-form-stacked" id="Form">
+        <legend class="uk-legend">Correct data if nessesssary</legend>
+        <div class="uk-margin">
+            <label class="uk-form-label">Study Instance UID</label>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Study Instance UID" id="Study Instance UID" disabled>
+        </div>
+        <div class="uk-margin">
+            <label class="uk-form-label"> Institution Name</label>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Institution Name" id="Institution Name">
+        </div>
+        <div class="uk-margin">
+            <label class="uk-form-label"> Patient's Age</label>
+
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Age"
+                   pattern="[0-9]{1,3}[D,W,M,Y]?">
+        </div>
+        <div class="uk-margin">
+            <label class="uk-form-label"> Patient's Sex</label>
+
+            <select class="uk-select uk-form-width-large" type="text" placeholder="Input" id="Patient's Sex">
+                <option>M</option>
+                <option>F</option>
+                <option>O</option>
+
+            </select>
+        </div>
+        <div class="uk-margin">
+            <label class="uk-form-label">Patient size</label>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Size"
+                   pattern="[0-9]{1}\.[0-9]{1,2}">
+        </div>
+        <div class="uk-margin">
+            <label class="uk-form-label">Patient weight</label>
+
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Weight"
+                   pattern="[0-9]{1,2}\.?[0-9]{1,2}">
+        </div>
+        <div class="uk-margin ">
+            <label class="uk-form-label">Date of examination</label>
+
+            <input class="uk-input uk-form-width-large" type="date" placeholder="Input" id="Series Date">
+        </div>
+        <div class="uk-margin ">
+            <label class="uk-form-label">Tumor type</label>
+            <select id="Tumor Type" class="uk-select uk-text-center uk-form-width-large" style="width: 512px;">
+                <option>RCC</option>
+                <option>CYST</option>
+                <option>AML</option>
+                <option>Metanephric tumours</option>
+                <option>Nephroblastic and cystic tumours occurring mainly in children</option>
+                <option>Mesenchymal tumours occurring mainly in children</option>
+                <option>Mesenchymal tumours occurring maily in adults</option>
+                <option>Mixed epithelial and stromal tumour family</option>
+                <option>Neuroendocrine tumours</option>
+                <option>Miscellaneous tumours</option>
+                <option>Metastatic tumours</option>
+            </select>
+        </div>
+
+
+    </form>
+      <button class="uk-button uk-button-default" onclick='sentData()'>Sent image</button>
+</div>
+
+
+<div id="selectArea" hidden>
+</div>
+
+<style>
+    #selectArea {
+        position: absolute;
+        z-index: 9;
+        background-color: #f1f1f1;
+        text-align: center;
+        width: 100px;
+        height: 100px;
+        opacity: 0.5;
+    }
+
+    canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        width: 512px;
+        height: 512px;
+        min-width: 512px;
+        min-height: 512px;
+    }
+
+</style>
+</BODY>
+<script type="text/javascript" src="{{ url_for('static', filename='dict.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
+
+</HTML>
