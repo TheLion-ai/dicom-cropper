@@ -1,3 +1,5 @@
+area_width = 100
+
 function littleToBig(hex) {
     /*changes Little Endian to Big Endian*/
     if (hex.length > 2) { // Assuming little endian encoding
@@ -58,7 +60,7 @@ function getEncoding(value) {
         "1.2.840.10008.1.2.1", // Little Endian Explicit
         "1.2.840.10008.1.2.4.90", //
     ];
-    if(!encoding.includes(value)){
+    if (!encoding.includes(value.replace('\u0000', ''))) {
         alert("Unsupported file encoding. Contact support to request an update.");
         unsupported = true;
     }
@@ -77,7 +79,7 @@ function getElementName(index, dicom) {
     tag = tag.toUpperCase();
     console.log(`${group}${element}`);
     let changeEncoding = (group != "0002") ? 1 : 0;
-    for (i = 0; i < dicomAttr.length; i++){
+    for (i = 0; i < dicomAttr.length; i++) {
         if (dicomAttr[i].Tag === tag) {
             const name = dicomAttr[i].Name;
             const [isASCII, isException] = checkVR(i);
@@ -123,16 +125,16 @@ function dicomToJSON(dicom) {
     let dicomJSON = {};
 
     while (index < dicom.length) {
-        try{
-        [index, element, isASCII, isException, changeEncoding] = getElementName(index, dicom);
-        } catch(e){
+        try {
+            [index, element, isASCII, isException, changeEncoding] = getElementName(index, dicom);
+        } catch (e) {
             alert("Unsupported file format.\nMake sure your file is in Dicom format. Contact support for further details.");
             return "Unsupported file format.";
         }
         if (changeEncoding) {
             [bigEndian, explicit, unsupported] = getEncoding(dicomJSON[
                 "Transfer Syntax UID"]); // wykonywane za każdym razem, gdy element jest z innej grupy niż 0020 trzeba to zmienić
-            if(unsupported){
+            if (unsupported) {
                 return "Unsupported file format.";
             }
         }
@@ -240,16 +242,20 @@ function displayImage(ctx, rows, columns, pixToDispArr) {
 
 function showCoords(rect, x, y) {
 
-    window.x = Math.floor(x- rect.left)
-    window.y = Math.floor(y -rect.top)
+    x = Math.floor(x - rect.left);
+    y = Math.floor(y - rect.top);
+
+    window.rectX = x - (area_width / 2);
+    window.rectY = y - (area_width / 2);
+
     let value = pixelDataArr[y * 512 + x];
     let value2 = pixToDispArr[y * 512 + x];
-    var coords = "X coords: " + window.x + ", Y coords: " + window.y + "    " + value + "    " + value2;
+    var coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
     document.getElementById("coordinates").innerHTML = coords;
 }
 
-function autoFill(dicomJSON){
-    document.getElementById("Study Instance UID").value = (dicomJSON.hasOwnProperty("Study Instance UID")) ? dicomJSON["Study Instance UID"].replace('\u0000','') : "";
+function autoFill(dicomJSON) {
+    document.getElementById("Study Instance UID").value = (dicomJSON.hasOwnProperty("Study Instance UID")) ? dicomJSON["Study Instance UID"].replace('\u0000', '') : "";
     document.getElementById("Institution Name").value = (dicomJSON.hasOwnProperty("Institution Name")) ? dicomJSON["Institution Name"] : "Copernicus Zaspa";
     document.getElementById("Patient's Age").value = (dicomJSON.hasOwnProperty("Patient's Age")) ? dicomJSON["Patient's Age"] : "age";
     document.getElementById("Patient's Sex").value = (dicomJSON.hasOwnProperty("Patient's Sex")) ? $.trim(dicomJSON["Patient's Sex"]) : "M or F or O";
@@ -262,11 +268,17 @@ function autoFill(dicomJSON){
 function loadData() {
     a = document.getElementById("cos");
     a.addEventListener('change', function () {
+        let success = document.getElementById('success');
+        success.setAttribute('hidden', 'hidden')
+
         let guideline = document.getElementById('guideline');
         guideline.innerText = 'Uploading file';
 
         let guideline2 = document.getElementById('guideline2');
-        guideline2.innerText = '';
+        guideline2.innerText = 'Please wait';
+
+        let upload = document.getElementById('upload');
+        upload.setAttribute('hidden', 'hidden');
         console.log("CDF");
         file = a.files[0];
         console.log(a.files);
@@ -279,7 +291,7 @@ function loadData() {
             const dicm = Array.from(typedArray1, x => Number(x).toString(16));
             console.log(dicm);
             const dicomJSON = dicomToJSON(dicm);
-            if(dicomJSON == "Unsupported file format."){
+            if (dicomJSON == "Unsupported file format.") {
                 return 0;
             }
             console.log(dicomJSON);
@@ -294,13 +306,12 @@ function loadData() {
             } else {
                 // canvas-unsupported code here
             }
-            let success = document.getElementById('success');
-            success.setAttribute('hidden','hidden')
+
             let canvasDiv = document.getElementById('canvasDiv');
             canvasDiv.removeAttribute('hidden')
             autoFill(dicomJSON);
-            let upload= document.getElementById('upload');
-            upload.setAttribute('hidden','hidden');
+            let upload = document.getElementById('upload');
+            upload.setAttribute('hidden', 'hidden');
             let guideline = document.getElementById('guideline');
             guideline.innerText = 'Select tumor area';
 
@@ -313,16 +324,14 @@ function loadData() {
 
             selectArea.style.left = rect.left + "px";
             selectArea.style.top = rect.top + "px";
-            window.rectX = selectArea.offsetLeft
-            window.rectY = selectArea.offsetTop
-            showCoords(rect,selectArea.offsetLeft+ 50, selectArea.offsetTop+50)
-            dragElement(selectArea,rect,rect);
+
+            showCoords(rect, selectArea.offsetLeft + area_width / 2, selectArea.offsetTop + area_width / 2)
+            dragElement(selectArea, rect, rect);
         };
         reader.readAsArrayBuffer(file);
 
     })
 }
-
 
 
 loadData();
@@ -332,7 +341,7 @@ function onResize() {
 
     let canvas = document.getElementById('dicomImage');
     rect = canvas.getBoundingClientRect()
-    if(rect.left !=0 && rect.top !=0) {
+    if (rect.left != 0 && rect.top != 0) {
         let selectArea = document.getElementById('selectArea');
         selectArea.removeAttribute('hidden')
 
@@ -345,19 +354,17 @@ function onResize() {
 }
 
 
-function dragElement(elmnt,rect) {
+function dragElement(elmnt, rect) {
 
 
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var rect = rect
     document.getElementById(elmnt.id).onmousedown = dragMouseDown;
 
-    function isOutisideImg(rect,x,y) {
-        if(x<rect.left || x>rect.right || y> rect.bottom || y< rect.top)
-        {
+    function isOutisideImg(rect, x, y) {
+        if (x < rect.left || x > rect.right || y > rect.bottom || y < rect.top) {
             return true
-        }
-        else{
+        } else {
             return false
         }
 
@@ -370,15 +377,9 @@ function dragElement(elmnt,rect) {
         // get the mouse cursor position at startup:
         pos3 = e.clientX;
         pos4 = e.clientY;
-        if(!isOutisideImg(rect,pos3,pos4)) {
-            document.onmouseup = closeDragElement;
-            // call a function whenever the cursor moves:
-            document.onmousemove = elementDrag;
-        }
-        else {
-            console.log((pos3+ ' ' + pos4))
-            console.log(rect)
-        }
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
     }
 
     function elementDrag(e) {
@@ -394,7 +395,7 @@ function dragElement(elmnt,rect) {
 
         x = elmnt.offsetLeft - pos1
         y = elmnt.offsetTop - pos2
-        if(x> rect.left  && x+100< rect.right+1 && y> rect.top -1 && y+100<rect.bottom+1) {
+        if (x > rect.left && x + area_width < rect.right + 1 && y > rect.top - 1 && y + area_width < rect.bottom + 1) {
             elmnt.style.top = y + "px";
             elmnt.style.left = x + "px";
         }
@@ -403,7 +404,7 @@ function dragElement(elmnt,rect) {
 
     function closeDragElement(e) {
         /* stop moving when mouse button is released:*/
-        showCoords(rect,elmnt.offsetLeft+ 50, elmnt.offsetTop+50)
+        showCoords(rect, elmnt.offsetLeft + area_width / 2, elmnt.offsetTop + area_width / 2)
         document.onmouseup = null;
         document.onmousemove = null;
     }
@@ -412,22 +413,23 @@ function dragElement(elmnt,rect) {
 function sentData() {
     const form = document.getElementById("Form")
     const sentDict = {}
-    for (field of document.getElementById("Form").elements){
-        sentDict[field.id] =field.value
+    for (field of document.getElementById("Form").elements) {
+        sentDict[field.id] = field.value
     }
-    sentDict['Image'] = pixelDataArr;
-    sentDict['Upper-left'] = {'x':window.rectX,'y':window.rectY}
+    sentDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width}
 
+    sentDict['Image'] = pixelDataArr;
     $.ajax({
         url: '/sent',
         type: "POST",
         data: JSON.stringify(sentDict),
         contentType: "application/json",
-        success : function () {
-            let canvasDiv = document.getElementById('canvasDiv');
-            canvasDiv.setAttribute('hidden','hidden');
+        success: function (data) {
 
-            let upload= document.getElementById('upload');
+            let canvasDiv = document.getElementById('canvasDiv');
+            canvasDiv.setAttribute('hidden', 'hidden');
+
+            let upload = document.getElementById('upload');
             upload.removeAttribute('hidden');
             let guideline = document.getElementById('guideline');
             guideline.innerText = 'Upload another dicom file';
@@ -437,13 +439,15 @@ function sentData() {
                 '    computer';
 
             let selectArea = document.getElementById('selectArea');
-            selectArea.setAttribute('hidden','hidden');
+            selectArea.setAttribute('hidden', 'hidden');
             let success = document.getElementById('success');
             success.removeAttribute('hidden');
         },
         error: function (request, status, error) {
-            request.responseText = "File wasn't sent.";
-            alert(request.responseText);
+            // request.responseText = "There was an error on the server. File wasn't sent.";
+            alert(request.statusText);
+
+
         },
     });
 }

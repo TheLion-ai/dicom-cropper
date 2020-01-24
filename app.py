@@ -18,6 +18,7 @@ def allowed_file(filename):
 
 @app.route('/sent', methods=['POST'])
 def sent():
+    message = 'Data uploaded succesfully'
     data = request.json
     if(os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'))):
         with jsonlines.open(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'), 'a') as file:
@@ -25,7 +26,7 @@ def sent():
     else:
         with jsonlines.open(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'), 'w') as file:
             file.write(data)
-    return jsonify(data)
+    return message
 
 
 @app.route('/viewer')
