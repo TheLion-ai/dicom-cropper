@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<HTML  style="min-height: 100%;margin: 0;margin: 0;background-color:#222222 !important;">
+<HTML style="min-height: 100%;margin: 0;margin: 0;background-color:#222222 !important;">
 
 <HEAD>
     <TITLE>Dicom viewer</TITLE>
@@ -22,7 +22,7 @@
     <div class="uk-navbar-left uk-background-secondary">
 
         <ul class="uk-navbar-nav">
-            <li class="uk-active"><a href="#">Dicom Viewer</a></li>
+            <li class="uk-active"><a href="#"><img src="{{ url_for('static', filename='radiato.png') }}" style='width:250px'></a></li>
 
         </ul>
 
@@ -31,8 +31,10 @@
 
 </nav>
 
-<div id ='success' class="uk-margin uk-text-center" hidden>
-    <input class=" uk-form-success uk-input uk-text-center uk-form-width-large" type="text" placeholder="Data sent successfully" value="Data sent successfully" disabled style="color: #32d296;border-color: #32d296;">
+<div id='success' class="uk-margin uk-text-center" hidden>
+    <input class=" uk-form-success uk-input uk-text-center uk-form-width-large" type="text"
+           placeholder="Data sent successfully" value="Data sent successfully" disabled
+           style="color: #32d296;border-color: #32d296;">
 </div>
 <h1 id="guideline" class="uk-heading-medium uk-text-center uk-margin-small">Upload dicom file</h1>
 <h3 id="guideline2" class="uk-text-center uk-margin-small">Click the button below to select dicom file from your
@@ -59,11 +61,25 @@
         <legend class="uk-legend">Correct data if nessesssary</legend>
         <div class="uk-margin">
             <label class="uk-form-label">Study Instance UID</label>
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Study Instance UID" id="Study Instance UID" disabled>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Study Instance UID"
+                   id="Study Instance UID" disabled>
+        </div>
+        <div class="uk-margin ">
+            <label class="uk-form-label">Phase</label>
+            <select id="Phase" class="uk-select uk-text-center uk-form-width-large" style="width: 512px;">
+                <option>CT without contrast</option>
+                <option>Arterial</option>
+                <option>Portal venous</option>
+                <option>Nephrogenic </option>
+                <option>Equilibrium/delayed</option>
+
+
+            </select>
         </div>
         <div class="uk-margin">
             <label class="uk-form-label"> Institution Name</label>
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Institution Name" id="Institution Name">
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Institution Name"
+                   id="Institution Name">
         </div>
         <div class="uk-margin">
             <label class="uk-form-label"> Patient's Age</label>
@@ -100,23 +116,28 @@
         <div class="uk-margin ">
             <label class="uk-form-label">Tumor type</label>
             <select id="Tumor Type" class="uk-select uk-text-center uk-form-width-large" style="width: 512px;">
-                <option>RCC</option>
-                <option>CYST</option>
+                <option>ccRCC</option>
+                <option>pRCC</option>
+                <option>chRCC</option>
+                <option>TCC</option>
+                <option>chłoniak</option>
+                <option>przerzut</option>
+                <option>onkocytoma</option>
+                <option>zapalenie</option>
                 <option>AML</option>
-                <option>Metanephric tumours</option>
-                <option>Nephroblastic and cystic tumours occurring mainly in children</option>
-                <option>Mesenchymal tumours occurring mainly in children</option>
-                <option>Mesenchymal tumours occurring maily in adults</option>
-                <option>Mixed epithelial and stromal tumour family</option>
-                <option>Neuroendocrine tumours</option>
-                <option>Miscellaneous tumours</option>
-                <option>Metastatic tumours</option>
+                <option>zawał nerki</option>
+                <option>ładony-inne</option>
+                <option>Bośniak-1</option>
+                <option>Bośniak-2</option>
+                <option>Bośniak-3</option>
+                <option>Bośniak-4</option>
+
             </select>
         </div>
 
 
     </form>
-      <button class="uk-button uk-button-default" onclick='sendData()'>Send image</button>
+    <button class="uk-button uk-button-default" onclick='sendData()'>Send image</button>
 </div>
 
 
