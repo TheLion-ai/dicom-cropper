@@ -40,7 +40,7 @@
 
 
 <div id='upload' class="js-upload uk-text-center uk-width-4-4@m uk-margin-auto uk-margin-large" uk-form-custom>
-    <input type="file" id="cos">
+    <input type="file" id="file-select-button">
     <button class="uk-button uk-button-default" type="button" tabindex="-1">Select dicom file</button>
 </div>
 <progress id="js-progressbar" class="uk-progress" value="0" max="100" hidden></progress>
@@ -82,12 +82,12 @@
             </select>
         </div>
         <div class="uk-margin">
-            <label class="uk-form-label">Patient size</label>
+            <label class="uk-form-label">Patient's Size</label>
             <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Size"
                    pattern="[0-9]{1}\.[0-9]{1,2}">
         </div>
         <div class="uk-margin">
-            <label class="uk-form-label">Patient weight</label>
+            <label class="uk-form-label">Patient's Weight</label>
 
             <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Weight"
                    pattern="[0-9]{1,2}\.?[0-9]{1,2}">
@@ -116,7 +116,7 @@
 
 
     </form>
-      <button class="uk-button uk-button-default" onclick='sentData()'>Sent image</button>
+      <button class="uk-button uk-button-default" onclick='sendData()'>Send image</button>
 </div>
 
 

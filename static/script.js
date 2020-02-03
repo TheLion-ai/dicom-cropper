@@ -1,4 +1,4 @@
-area_width = 100
+area_width = 100;
 
 function littleToBig(hex) {
     /*changes Little Endian to Big Endian*/
@@ -21,7 +21,7 @@ function hexToASCII(hex) {
     return String.fromCharCode(parseInt(hex, 16));
 }
 
-function hex2B(index, dicom, range) {
+function hexTo2BytesPadding(index, dicom, range) {
     /* make sure each element of an array is represented by two hex digits(two bytes) */
     for (let i = index; i < index + range; i++) {
         if (dicom[i].length < 2) {
@@ -31,8 +31,8 @@ function hex2B(index, dicom, range) {
 }
 
 function findPixelData(dicom) {
-    const key = ['0028']
-    let find = 0
+    const key = ['0028'];
+    let find = 0;
     let i = 128;
     while (find < key.length - 1) {
         find = (dicom[i] == key[find]) ? find + 1 : 0;
@@ -41,9 +41,9 @@ function findPixelData(dicom) {
     return i - 3;
 }
 
-function checkVR(i) {
+function checkIfAsciiOrHex(i) {
     /* checks if a value should be decoded in ASCII or stay in HEX*/
-    ascii = ["CS", "SH", "LO", "ST", "LT", "UT", "AE", "PN", "UI", "DA", "TM", "DT", "AS", "IS", "DS"]
+    ascii = ["CS", "SH", "LO", "ST", "LT", "UT", "AE", "PN", "UI", "DA", "TM", "DT", "AS", "IS", "DS"];
     exceptions = ["SS", "US or SS", "US", "SL", /*"UL",*/ "AT", "FL", "FD", "OB", "OB or OW", "OW", "OF", "SQ", "UT",
         "UN", "US or OW", "US or SS or OW"
     ]; // even if they are encoded explicitly, their length is stored in 4 bytes
@@ -71,7 +71,7 @@ function getEncoding(value) {
 
 function getElementName(index, dicom) {
     /* match each dicom tag with a name*/
-    hex2B(index, dicom, 4); // each tag name takes 4 bytes, 2 per group name and 2 per element name
+    hexTo2BytesPadding(index, dicom, 4); // each tag name takes 4 bytes, 2 per group name and 2 per element name
     const group = dicom.slice(index, index + 2).reverse().join(
         ""); // reverse from Big Endian to little Endian and convert to string
     const element = dicom.slice(index + 2, index + 4).reverse().join("");
@@ -79,10 +79,10 @@ function getElementName(index, dicom) {
     tag = tag.toUpperCase();
     console.log(`${group}${element}`);
     let changeEncoding = (group != "0002") ? 1 : 0;
-    for (i = 0; i < dicomAttr.length; i++) {
+    for (let i = 0; i < dicomAttr.length; i++) {
         if (dicomAttr[i].Tag === tag) {
             const name = dicomAttr[i].Name;
-            const [isASCII, isException] = checkVR(i);
+            const [isASCII, isException] = checkIfAsciiOrHex(i);
             index += 4;
             console.log(`name: ${name} VR: ${dicomAttr[i].VR}`);
             return [index, name, isASCII, isException, changeEncoding];
@@ -96,7 +96,7 @@ function getValueLength(index, dicom, explicit = true,
     /* read length (in bytes) of data stored in a given tag*/
     let step = (explicit) ? [2, 4] : [0, 4];
     step = (isException && explicit) ? [4, 8] : step;
-    hex2B(index + step[0], dicom, index + step[1]);
+    hexTo2BytesPadding(index + step[0], dicom, index + step[1]);
     const length = hexToInt(dicom.slice(index + step[0], index + step[1]).join("")); // in bytes
     console.log(`length: ${length}`);
     index += step[1];
@@ -104,7 +104,7 @@ function getValueLength(index, dicom, explicit = true,
 }
 
 function getValue(index, dicom, length, isASCII, element) {
-    hex2B(index, dicom, length);
+    hexTo2BytesPadding(index, dicom, length);
     let value;
     if (isASCII) {
         value = dicom.slice(index, index + length).map(x => hexToASCII(x)).join('');
@@ -120,7 +120,8 @@ function getValue(index, dicom, length, isASCII, element) {
 
 function dicomToJSON(dicom) {
     let index = 132; //findPatientName(dicom); //132
-    let value, element, length, unsupported, bigEndian = 0, changeEncoding;
+    let value, element, length, unsupported, changeEncoding;
+    let bigEndian = 0;
     let explicit = 1;
     let dicomJSON = {};
 
@@ -128,7 +129,7 @@ function dicomToJSON(dicom) {
         try {
             [index, element, isASCII, isException, changeEncoding] = getElementName(index, dicom);
         } catch (e) {
-            alert("Unsupported file format.\nMake sure your file is in Dicom format. Contact support for further details.");
+            alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
             return "Unsupported file format.";
         }
         if (changeEncoding) {
@@ -145,7 +146,7 @@ function dicomToJSON(dicom) {
     return dicomJSON;
 }
 
-function u2(pixelDataArr) {
+function pixelDataToSignedInt(pixelDataArr) {
     /* converts pixelData from u2 to signed integer
 input: array of hex strings
 output: array of numbers
@@ -189,7 +190,8 @@ output: array of numbers
     return pixToDispArr;
 }
 
-function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRepresentation, rescaleSlope, rescaleIntercept, windowCenter, windowWidth, photometricInterpretation) {
+function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRepresentation,
+                         rescaleSlope, rescaleIntercept, windowCenter, windowWidth, photometricInterpretation) {
     bitsAllocated = parseInt(bitsAllocated);
     bitsStored = parseInt(bitsStored);
     highBit = parseInt(highBit);
@@ -199,7 +201,7 @@ function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRep
     windowCenter = parseInt(windowCenter);
     windowWidth = parseInt(windowWidth);
 
-    pixelDataArr = [];
+    let pixelDataArr = [];
     // Convert PixelData hex string into array of pixels
     let hexAllocated = Math.ceil(bitsAllocated / 8) * 2; // one byte is two hex digits
     let hexStored = Math.ceil(bitsStored / 8) * 2;
@@ -209,12 +211,12 @@ function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRep
     //if  highBit==bitsStored it's in BigEndian,  lse if highBit==0, then it is in LittleEndian,
     pixelDataArr = (highBit + 1 === bitsStored) ? pixelDataArr.map(x => littleToBig(x)) : pixelDataArr;
     // if pixelRepresentation=0, pixels are stored as unsigned integers, else if if pixelRepresentation=1 they are encoded in two's complement
-    pixelDataArr = (pixelRepresentation === 0) ? parseInt(pixelDataArr, 16) : u2(pixelDataArr);
+    pixelDataArr = (pixelRepresentation === 0) ? parseInt(pixelDataArr, 16) : pixelDataToSignedInt(pixelDataArr);
     // from now on pixelDataArr is array of numbers
     pixelDataArr = pixelDataArr.map(x => rescaleSlope * x + rescaleIntercept);
     // from now we are going to operate on a new array- pixToDispArr, because we will start processing the image for the purpose of displaying it in a browser
     // pixelDataArr doesn't change
-    pixToDispArr = Array.from(pixelDataArr);
+    let pixToDispArr = Array.from(pixelDataArr);
     pixToDispArr = adjustWindow(pixToDispArr, windowCenter, windowWidth);
     // so far we support only monochrome1 and monochrome2
     // MONOCHROME1 indicates that the greyscale ranges from bright to dark with ascending pixel values, whereas MONOCHROME2 ranges from dark to bright with ascending pixel values.
@@ -226,6 +228,7 @@ function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRep
     //console.log(pixToDispArr.filter(x => x!="#000" && x!="#FFFFFF"));
     // CANT RETURN TWO ARRAYS - FIX IT!!!!!!!!!!
     window.pixelDataArr = pixelDataArr;
+    window.pixToDispArr = pixToDispArr;
     return pixToDispArr;
 }
 
@@ -248,9 +251,9 @@ function showCoords(rect, x, y) {
     window.rectX = x - (area_width / 2);
     window.rectY = y - (area_width / 2);
 
-    let value = pixelDataArr[y * 512 + x];
-    let value2 = pixToDispArr[y * 512 + x];
-    var coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
+    let value = window.pixelDataArr[y * 512 + x];
+    let value2 = window.pixToDispArr[y * 512 + x];
+    let coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
     document.getElementById("coordinates").innerHTML = coords;
 }
 
@@ -266,8 +269,8 @@ function autoFill(dicomJSON) {
 }
 
 function loadData() {
-    a = document.getElementById("cos");
-    a.addEventListener('change', function () {
+    let fileSelectButton = document.getElementById("file-select-button");
+    fileSelectButton.addEventListener('change', function () {
         let success = document.getElementById('success');
         success.setAttribute('hidden', 'hidden')
 
@@ -280,13 +283,13 @@ function loadData() {
         let upload = document.getElementById('upload');
         upload.setAttribute('hidden', 'hidden');
         console.log("CDF");
-        file = a.files[0];
-        console.log(a.files);
-        var reader = new FileReader();
+        let file = fileSelectButton.files[0];
+        console.log(fileSelectButton.files);
+        let reader = new FileReader();
 
         // Closure to capture the file information.
         reader.onload = function (event) {
-            var contents = event.target.result;
+            let contents = event.target.result;
             const typedArray1 = new Uint8Array(contents);
             const dicm = Array.from(typedArray1, x => Number(x).toString(16));
             console.log(dicm);
@@ -297,7 +300,7 @@ function loadData() {
             console.log(dicomJSON);
             let pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"], dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"], dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"], dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
             console.log(pixToDispArr);
-            var canvas = document.getElementById('dicomImage');
+            let canvas = document.getElementById('dicomImage');
             if (canvas.getContext) {
                 var ctx = canvas.getContext('2d');
                 displayImage(ctx, dicomJSON["Rows"], dicomJSON["Columns"], pixToDispArr);
@@ -308,7 +311,7 @@ function loadData() {
             }
 
             let canvasDiv = document.getElementById('canvasDiv');
-            canvasDiv.removeAttribute('hidden')
+            canvasDiv.removeAttribute('hidden');
             autoFill(dicomJSON);
             let upload = document.getElementById('upload');
             upload.setAttribute('hidden', 'hidden');
@@ -318,15 +321,15 @@ function loadData() {
             let guideline2 = document.getElementById('guideline2');
             guideline2.innerText = 'Drag the white box over the kidney with the tumor, try to center the kidney in the box';
 
-            rect = canvas.getBoundingClientRect()
+            let rect = canvas.getBoundingClientRect();
             let selectArea = document.getElementById('selectArea');
-            selectArea.removeAttribute('hidden')
+            selectArea.removeAttribute('hidden');
 
             selectArea.style.left = rect.left + "px";
             selectArea.style.top = rect.top + "px";
 
-            showCoords(rect, selectArea.offsetLeft + area_width / 2, selectArea.offsetTop + area_width / 2)
-            dragElement(selectArea, rect, rect);
+            showCoords(rect, selectArea.offsetLeft + area_width / 2, selectArea.offsetTop + area_width / 2);
+            dragElement(selectArea, rect);
         };
         reader.readAsArrayBuffer(file);
 
@@ -340,28 +343,25 @@ window.onresize = onResize;
 function onResize() {
 
     let canvas = document.getElementById('dicomImage');
-    rect = canvas.getBoundingClientRect()
+    let rect = canvas.getBoundingClientRect()
     if (rect.left != 0 && rect.top != 0) {
         let selectArea = document.getElementById('selectArea');
-        selectArea.removeAttribute('hidden')
+        selectArea.removeAttribute('hidden');
 
         selectArea.style.left = rect.left + "px";
         selectArea.style.top = rect.top + "px";
 
         dragElement(selectArea, rect, rect);
     }
-
 }
 
 
 function dragElement(elmnt, rect) {
-
-
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    var rect = rect
+    // var rect = rect;
     document.getElementById(elmnt.id).onmousedown = dragMouseDown;
 
-    function isOutisideImg(rect, x, y) {
+    function isOutsideImg(rect, x, y) {
         if (x < rect.left || x > rect.right || y > rect.bottom || y < rect.top) {
             return true
         } else {
@@ -393,8 +393,8 @@ function dragElement(elmnt, rect) {
         pos4 = e.clientY;
         // set the element's new position:
 
-        x = elmnt.offsetLeft - pos1
-        y = elmnt.offsetTop - pos2
+        x = elmnt.offsetLeft - pos1;
+        y = elmnt.offsetTop - pos2;
         if (x > rect.left && x + area_width < rect.right + 1 && y > rect.top - 1 && y + area_width < rect.bottom + 1) {
             elmnt.style.top = y + "px";
             elmnt.style.left = x + "px";
@@ -404,25 +404,25 @@ function dragElement(elmnt, rect) {
 
     function closeDragElement(e) {
         /* stop moving when mouse button is released:*/
-        showCoords(rect, elmnt.offsetLeft + area_width / 2, elmnt.offsetTop + area_width / 2)
+        showCoords(rect, elmnt.offsetLeft + area_width / 2, elmnt.offsetTop + area_width / 2);
         document.onmouseup = null;
         document.onmousemove = null;
     }
 }
 
-function sentData() {
-    const form = document.getElementById("Form")
-    const sentDict = {}
-    for (field of document.getElementById("Form").elements) {
-        sentDict[field.id] = field.value
+function sendData() {
+    const form = document.getElementById("Form");
+    const sendDict = {};
+    for (const field of document.getElementById("Form").elements) {
+        sendDict[field.id] = field.value
     }
-    sentDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width}
+    sendDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width};
 
-    sentDict['Image'] = pixelDataArr;
+    sendDict['Image'] = pixelDataArr;
     $.ajax({
-        url: '/sent',
+        url: '/send',
         type: "POST",
-        data: JSON.stringify(sentDict),
+        data: JSON.stringify(sendDict),
         contentType: "application/json",
         success: function (data) {
 
@@ -446,8 +446,6 @@ function sentData() {
         error: function (request, status, error) {
             // request.responseText = "There was an error on the server. File wasn't sent.";
             alert(request.statusText);
-
-
         },
     });
 }

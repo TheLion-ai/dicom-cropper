@@ -2,7 +2,7 @@ import os
 
 from flask import *
 import jsonlines
-import json
+
 i = 0
 app = Flask(__name__, static_url_path='/static')
 # Create a directory in a known location to save files to.
@@ -16,20 +16,24 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route('/sent', methods=['POST'])
-def sent():
+@app.route('/send', methods=['POST'])
+def send():
     message = 'Data uploaded succesfully'
     data = request.json
-    if(os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'))):
-        with jsonlines.open(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'), 'a') as file:
+    # data_folder = os.path.join(app.config['UPLOAD_FOLDER'], data['Tumor Type'])
+    # if not os.path.exists(data_folder):
+    #     os.mkdir(data_folder)
+    data_file = os.path.join(app.config['UPLOAD_FOLDER'], f'test.json')
+    if os.path.exists(data_file):
+        with jsonlines.open(data_file, 'a') as file:
             file.write(data)
     else:
-        with jsonlines.open(os.path.join(app.config['UPLOAD_FOLDER'], f'test.json'), 'w') as file:
+        with jsonlines.open(data_file, 'w') as file:
             file.write(data)
     return message
 
 
-@app.route('/viewer')
+@app.route('/')
 def viewer():
     return render_template('index.html')
 
