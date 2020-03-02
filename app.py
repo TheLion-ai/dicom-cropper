@@ -21,15 +21,25 @@ def allowed_file(filename):
 def send():
     message = 'Data uploaded succesfully'
     data = request.json
-    # data_folder = os.path.join(app.config['UPLOAD_FOLDER'], data['Tumor Type'])
-    # if not os.path.exists(data_folder):
-    #     os.mkdir(data_folder)
+    # Tesing if dict is correct
+    try:
+        line = json.dumps(data)
+        data['Tumor Size']
+        data['Tumor Type']
+        data['Phase']
+        data['Image']
+    except:
+        return "Error while sending data, please try again", 400
+
+
     data_file = os.path.join(app.config['UPLOAD_FOLDER'], f'test.json')
     if os.path.exists(data_file):
-        with jsonlines.open(data_file, 'a') as file:
+        with open(data_file, 'a') as file:
+            data = json.dumps(data)
             file.write(data)
     else:
-        with jsonlines.open(data_file, 'w') as file:
+        with open(data_file, 'w+') as file:
+            data = json.dumps(data)
             file.write(data)
     return message
 

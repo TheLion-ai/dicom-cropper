@@ -59,12 +59,51 @@
 
     <form class="uk-form-stacked" id="Form">
         <legend class="uk-legend">Correct data if nessesssary</legend>
-        <div class="uk-margin">
+        <button class="uk-button uk-button-default" type="button" uk-toggle="target: .show-more">Show more fields</button>
+        <div class="uk-margin show-more" hidden>
             <label class="uk-form-label">Study Instance UID</label>
             <input class="uk-input uk-form-width-large" type="text" placeholder="Study Instance UID"
                    id="Study Instance UID" disabled>
         </div>
-        <div class="uk-margin ">
+
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label"> Institution Name</label>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Institution Name"
+                   id="Institution Name">
+        </div>
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label"> Patient's Age</label>
+
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Age"
+                   pattern="[0-9]{1,3}[D,W,M,Y]?">
+        </div>
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label"> Patient's Sex</label>
+
+            <select class="uk-select uk-form-width-large" type="text" placeholder="Input" id="Patient's Sex">
+                <option>M</option>
+                <option>F</option>
+                <option>O</option>
+
+            </select>
+        </div>
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label">Patient's Size</label>
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Size"
+                   pattern="[0-9]{1}\.[0-9]{1,2}">
+        </div>
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label">Patient's Weight</label>
+
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Weight"
+                   pattern="[0-9]{1,2}\.?[0-9]{1,2}">
+        </div>
+        <div class="uk-margin show-more" hidden>
+            <label class="uk-form-label">Date of examination</label>
+
+            <input class="uk-input uk-form-width-large" type="date" placeholder="Input" id="Series Date">
+        </div>
+          <div class="uk-margin ">
             <label class="uk-form-label">Phase</label>
             <select id="Phase" class="uk-select uk-text-center uk-form-width-large" style="width: 512px;">
                 <option>CT without contrast</option>
@@ -75,43 +114,6 @@
 
 
             </select>
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label"> Institution Name</label>
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Institution Name"
-                   id="Institution Name">
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label"> Patient's Age</label>
-
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Age"
-                   pattern="[0-9]{1,3}[D,W,M,Y]?">
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label"> Patient's Sex</label>
-
-            <select class="uk-select uk-form-width-large" type="text" placeholder="Input" id="Patient's Sex">
-                <option>M</option>
-                <option>F</option>
-                <option>O</option>
-
-            </select>
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label">Patient's Size</label>
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Size"
-                   pattern="[0-9]{1}\.[0-9]{1,2}">
-        </div>
-        <div class="uk-margin">
-            <label class="uk-form-label">Patient's Weight</label>
-
-            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Patient's Weight"
-                   pattern="[0-9]{1,2}\.?[0-9]{1,2}">
-        </div>
-        <div class="uk-margin ">
-            <label class="uk-form-label">Date of examination</label>
-
-            <input class="uk-input uk-form-width-large" type="date" placeholder="Input" id="Series Date">
         </div>
         <div class="uk-margin ">
             <label class="uk-form-label">Tumor type</label>
@@ -133,6 +135,12 @@
                 <option>Bośniak-4</option>
 
             </select>
+        </div>
+            <div class="uk-margin">
+            <label class="uk-form-label"> Tumor Size</label>
+
+            <input class="uk-input uk-form-width-large" type="text" placeholder="Input" id="Tumor Size"
+                   pattern="[0-9]{1,3}">
         </div>
 
 

@@ -238,7 +238,7 @@ function displayImage(ctx, rows, columns, pixToDispArr) {
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < columns; j += 1) {
             ctx.fillStyle = pixToDispArr[rows * i + j];
-            ctx.fillRect(i, j, 1, 1);
+            ctx.fillRect(j, i, 1, 1);
         }
     }
 }
@@ -417,6 +417,14 @@ function sendData() {
         sendDict[field.id] = field.value
     }
     sendDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width};
+    if( window.rectX == 0 || window.rectY  == 0){
+        alert('Please move the box over the tumor')
+        return
+    }
+    if( !sendDict['Tumor Size']){
+        alert('Please input tumor size')
+        return
+    }
 
     sendDict['Image'] = pixelDataArr;
     $.ajax({
@@ -445,7 +453,7 @@ function sendData() {
         },
         error: function (request, status, error) {
             // request.responseText = "There was an error on the server. File wasn't sent.";
-            alert(request.statusText);
+            alert(request.responseText)
         },
     });
 }
