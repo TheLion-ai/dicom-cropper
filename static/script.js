@@ -1,4 +1,4 @@
-area_width = 100; // size of the square used to select the area of interest
+area_width = 130; // size of the square used to select the area of interest
 
 function littleToBig(hex) {
     /*changes Little Endian to Big Endian
@@ -86,6 +86,7 @@ function getEncoding(value) {
     return [bigEndian, explicit, unsupported];
 }
 
+
 function getElementName(index, dicom, isBigEndian) {
     /* match each dicom tag with a name*/
     let isASCII, isException, isSQ;
@@ -137,7 +138,6 @@ function getValueLength(index, dicom, explicit = true,
 function getValue(index, dicom, length, isASCII, tagName, isBigEndian) {
     hexTo2BytesPadding(index, dicom, length);
     let value;
-    console.log(`tag name: ${tagName}`)
     if (isASCII) {
         value = dicom.slice(index, index + length).map(x => hexToASCII(x)).join('');
     } else if (tagName == "Pixel Data") {
@@ -148,6 +148,52 @@ function getValue(index, dicom, length, isASCII, tagName, isBigEndian) {
     index += length;
     console.log(`value; ${value}`);
     return [index, value];
+}
+
+function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength){
+    let sqElemLength;
+    const closingTag = (isBigEndian) ? "FFFEE00D" : "FEFF0DE0";
+    index += 4; // omit SQ element's opening tag
+    [index, sqElemLength] = getValueLength(index, dicom, 0, 0, isBigEndian);
+    const endIndex = index + sqElemLength;
+    while(index<endIndex && dicom.slice(index, index+8)==closingTag){
+        [index, bareTag, tagName, isASCII, isException, changeEncoding,
+                isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
+        if(isSQ){
+            handleSQ(index, dicom, explicit, isException, isBigEndian);
+            return index;
+        }
+        [index, length] = getValueLength(index, dicom, explicit, isException, isBigEndian);
+        [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
+        dicomJSON[tagName] = value;
+    }
+    if(sqElemLength === 4294967295){
+        index += 8;
+    }
+    return index;
+}
+
+function handleSQ(index, dicom, explicit, isException, isBigEndian){
+    /* Decode Sequence Value Representation
+    */
+    let sqLength;
+    const closingTag = (isBigEndian) ? "FFFEE0DD" : "FEFFDDE0";
+    [index, length] = getValueLength(index, dicom,
+                        explicit, isException, isBigEndian);
+    undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
+    if(undefinedLength){
+        while(dicom.slice(index, index+8) != closingTag){
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+        }
+        index += 8;
+    } else{
+        const endIndex = index + sqLength;
+        while(index < endIndex){
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+        }
+    }
+    sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+    return index;
 }
 
 function dicomToJSON(dicom) {
@@ -166,7 +212,7 @@ function dicomToJSON(dicom) {
             isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
             console.log(index);
             if(isSQ){
-              //index = handleSQ(index, dicom); // TODO
+              index = handleSQ(index, dicom, explicit, isException, isBigEndian);
             }
         } catch (e) {
             alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
@@ -284,7 +330,7 @@ function displayImage(ctx, rows, columns, pixToDispArr) {
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < columns; j += 1) {
             ctx.fillStyle = pixToDispArr[rows * i + j];
-            ctx.fillRect(i, j, 1, 1);
+            ctx.fillRect(j, i, 1, 1);
         }
     }
 }
@@ -328,7 +374,6 @@ function loadData() {
 
         let upload = document.getElementById('upload');
         upload.setAttribute('hidden', 'hidden');
-        console.log("CDF");
         let file = fileSelectButton.files[0];
         console.log(fileSelectButton.files);
         let reader = new FileReader();
