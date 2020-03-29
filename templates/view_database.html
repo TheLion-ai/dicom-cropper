@@ -1,0 +1,22 @@
+{% extends "radiato/base.html" %}
+{% block content %}
+<div class="uk-container">
+    <h3 class = 'uk-text-center'>Available Studies</h3>
+    <table class="uk-table uk-table-striped">
+        <tbody>
+          <thead>
+            <tr>
+              <th>Study Instance UID</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          {% for study_id in study_ids %}
+            <tr>
+              <td>{{ study_id }}</td>
+              <td><a href="{{ url_for('db_viewer.view_study_id', study_id=study_id) }}">View</a></td>
+            </tr>
+          {%endfor%}
+        </tbody>
+    </table>
+</div>
+  {% endblock content %}

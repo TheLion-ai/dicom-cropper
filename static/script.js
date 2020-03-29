@@ -354,8 +354,8 @@ function autoFill(dicomJSON) {
     document.getElementById("Institution Name").value = (dicomJSON.hasOwnProperty("Institution Name")) ? dicomJSON["Institution Name"] : "Copernicus Zaspa";
     document.getElementById("Patient's Age").value = (dicomJSON.hasOwnProperty("Patient's Age")) ? dicomJSON["Patient's Age"] : "age";
     document.getElementById("Patient's Sex").value = (dicomJSON.hasOwnProperty("Patient's Sex")) ? $.trim(dicomJSON["Patient's Sex"]) : "M or F or O";
-    document.getElementById("Patient's Size").value = (dicomJSON.hasOwnProperty("Patient's Size")) ? dicomJSON["Patient's Size"] : "in meters";
-    document.getElementById("Patient's Weight").value = (dicomJSON.hasOwnProperty("Patient's Weight")) ? dicomJSON["Patient's Weight"] : "in kilograms";
+    document.getElementById("Patient's Size").value = (dicomJSON.hasOwnProperty("Patient's Size")) ? dicomJSON["Patient's Size"] : "";
+    document.getElementById("Patient's Weight").value = (dicomJSON.hasOwnProperty("Patient's Weight")) ? dicomJSON["Patient's Weight"] : "";
     document.getElementById("Series Date").value = (dicomJSON.hasOwnProperty("Series Date")) ? dicomJSON["Series Date"].replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3') : "YYYYMMDD";
 
 }
@@ -501,9 +501,21 @@ function dragElement(elmnt, rect) {
     }
 }
 
+function ISODateString(d) {
+    function pad(n) {return n<10 ? '0'+n : n}
+    return d.getUTCFullYear()+'-'
+         + pad(d.getUTCMonth()+1)+'-'
+         + pad(d.getUTCDate())+'T'
+         + pad(d.getUTCHours())+':'
+         + pad(d.getUTCMinutes())+':'
+         + pad(d.getUTCSeconds())+'Z'
+}
+
 function sendData() {
     const form = document.getElementById("Form");
     const sendDict = {};
+    let timeNow = new Date();
+    sendDict['Timestamp'] = ISODateString(timeNow);
     for (const field of document.getElementById("Form").elements) {
         sendDict[field.id] = field.value
     }
@@ -511,7 +523,8 @@ function sendData() {
 
     sendDict['Image'] = pixelDataArr;
     $.ajax({
-        url: '/send',
+        headers: { "X-CSRFToken": csrftoken },
+        url: '/viewer/sent/',
         type: "POST",
         data: JSON.stringify(sendDict),
         contentType: "application/json",
