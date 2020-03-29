@@ -1,28 +1,37 @@
-area_width = 130;
+area_width = 130; // size of the square used to select the area of interest
 
 function littleToBig(hex) {
-    /*changes Little Endian to Big Endian*/
+    /*changes Little Endian to Big Endian
+    Input: hex - hex string in Little Endian
+    Output: hex - hex string in Big Endian
+    */
     if (hex.length > 2) { // Assuming little endian encoding
         let hexArr = [];
         for (let i = 0; i < hex.length; i += 2) {
-            hexArr.push(hex.slice(i, i + 2));
+            hexArr.push(hex.slice(i, i + 2)); // one byte is represented by 2 hex digits(a single byte is in BigEndian)
         }
         hex = hexArr.reverse().join('');
     }
     return hex;
 }
 
-function hexToInt(hex) {
-    hex = littleToBig(hex);
+
+function hexToInt(hex, isBigEndian) {
+    /* input: hex - hex string in either Big or Little Endian, depending on the Transfer Syntax
+    */
+    if(!isBigEndian){
+        hex = littleToBig(hex);
+    }
     return parseInt(hex, 16);
 }
 
-function hexToASCII(hex) {
+
+function hexToASCII(hex) { // TODO: make sure it works Little/Big Endian
     return String.fromCharCode(parseInt(hex, 16));
 }
 
 function hexTo2BytesPadding(index, dicom, range) {
-    /* make sure each element of an array is represented by two hex digits(two bytes) */
+    /* makes sure each element of an array is represented by two hex digits(one byte)*/
     for (let i = index; i < index + range; i++) {
         if (dicom[i].length < 2) {
             dicom[i] = "0" + dicom[i];
@@ -30,119 +39,202 @@ function hexTo2BytesPadding(index, dicom, range) {
     }
 }
 
-function findPixelData(dicom) {
-    const key = ['0028'];
-    let find = 0;
-    let i = 128;
-    while (find < key.length - 1) {
-        find = (dicom[i] == key[find]) ? find + 1 : 0;
-        i++;
+function checkParameters(index, dicom, j, isOdd) {
+    /* checks if
+    1. a value should be decoded to ASCII or stay in HEX (isASCII)
+    2. VR in explicit encoding uses 2(default) or 4 bytes to store length (isException)
+    3. VR is SQ (isSQ)
+    j - a piece of json dict with information about a given Tag
+    isOdd - states if the tag is private
+    */
+    let vr = "";
+    const ascii = ["CS", "SH", "LO", "ST", "LT", "UT", "AE", "PN", "UI", "DA", "TM", "DT", "AS", "IS", "DS"];
+    const hex = ["SS", "US or SS", "US", "SL", "UL", "AT", "FL", "FD", "OB", "OB or OW", "OW", "OF", "SQ", "UT",
+        "UN", "US or OW", "US or SS or OW"
+    ];
+    const exceptions = ["OB", "OW", "OF", "SQ", "UT", "UN",
+    "OB or OW"]; // even if they are encoded explicitly, their length is stored in 4 bytes
+    if(isOdd){
+       // private tag's VR can't be found in dicomAttr dictionary
+       // private tags always use explicit encoding
+       // VRs are always in BigEndian ??? TODO
+       vr = dicom.slice(index, index+2).map(x => hexToASCII(x)).join('');
+    } else {
+        vr = dicomAttr[j].VR;
     }
-    return i - 3;
+    const isASCII = (ascii.indexOf(vr) != -1) ? 1 : 0;
+    const isException = (exceptions.indexOf(vr) != -1) ? 1 : 0;
+    const isSQ = (vr=="SQ") ? 1 : 0;
+    return [isASCII, isException, isSQ];
 }
 
-function checkIfAsciiOrHex(i) {
-    /* checks if a value should be decoded in ASCII or stay in HEX*/
-    ascii = ["CS", "SH", "LO", "ST", "LT", "UT", "AE", "PN", "UI", "DA", "TM", "DT", "AS", "IS", "DS"];
-    exceptions = ["SS", "US or SS", "US", "SL", /*"UL",*/ "AT", "FL", "FD", "OB", "OB or OW", "OW", "OF", "SQ", "UT",
-        "UN", "US or OW", "US or SS or OW"
-    ]; // even if they are encoded explicitly, their length is stored in 4 bytes
-    isASCII = (ascii.indexOf(dicomAttr[i].VR) != -1) ? 1 : 0;
-    isException = (exceptions.indexOf(dicomAttr[i].VR) != -1) ? 1 : 0;
-    return [isASCII, isException];
-}
 
 function getEncoding(value) {
     let unsupported = false;
     const encoding = [
-        `1.2.840.10008.1.2`, // Little Endian Implicit
+        "1.2.840.10008.1.2", // Little Endian Implicit
         "1.2.840.10008.1.2.2", // Big Endian Explicit
         "1.2.840.10008.1.2.1", // Little Endian Explicit
-        "1.2.840.10008.1.2.4.90", //
+        "1.2.840.10008.1.2.4.90", // JPEG-2000 Lossless
     ];
     if (!encoding.includes(value.replace('\u0000', ''))) {
         alert("Unsupported file encoding. Contact support to request an update.");
         unsupported = true;
     }
-    let bigEndian = (value == encoding[1]) ? 1 : 0; // 0-little endian, 1-big endian
-    let explicit = (value.slice(0, -1) == encoding[0]) ? 0 : 1; // 0-implicit, 1-explicit
+    const bigEndian = (value == encoding[1]) ? 1 : 0; // 0-little endian, 1-big endian
+    const explicit = (value.slice(0, -1) == encoding[0]) ? 0 : 1; // 0-implicit, 1-explicit
     return [bigEndian, explicit, unsupported];
 }
 
-function getElementName(index, dicom) {
+
+function getElementName(index, dicom, isBigEndian) {
     /* match each dicom tag with a name*/
+    let isASCII, isException, isSQ;
     hexTo2BytesPadding(index, dicom, 4); // each tag name takes 4 bytes, 2 per group name and 2 per element name
-    const group = dicom.slice(index, index + 2).reverse().join(
-        ""); // reverse from Big Endian to little Endian and convert to string
-    const element = dicom.slice(index + 2, index + 4).reverse().join("");
+    let group = dicom.slice(index, index + 2);
+    let element = dicom.slice(index + 2, index + 4);
+    const isOdd = (hexToInt(group.join(""), isBigEndian)%2 === 0) ? 0 : 1; // odd numbers stand for private tags
+    const bareTag = group + element;
+    group = group.reverse().join(""); // reverse from Little Endian to Big Endian and convert to string // TODO: make it universal
+    element = element.reverse().join("");
     let tag = "(" + group + "," + element + ")";
-    tag = tag.toUpperCase();
+    tag = tag.toUpperCase(); // hex digits in dicomAttr dictionary are in uppercase
     console.log(`${group}${element}`);
-    let changeEncoding = (group != "0002") ? 1 : 0;
-    for (let i = 0; i < dicomAttr.length; i++) {
-        if (dicomAttr[i].Tag === tag) {
-            const name = dicomAttr[i].Name;
-            const [isASCII, isException] = checkIfAsciiOrHex(i);
-            index += 4;
-            console.log(`name: ${name} VR: ${dicomAttr[i].VR}`);
-            return [index, name, isASCII, isException, changeEncoding];
+    let changeEncoding = (group != "0002") ? 1 : 0; // tags from group 2 are always in Little Endian Explicit
+    index += 4;
+    if(!isOdd){
+        for(let j = 0; j < dicomAttr.length; j++) {
+            if (dicomAttr[j].Tag === tag) {
+                const tagName = dicomAttr[j].Name;
+                const [isASCII, isException, isSQ] = checkParameters(index, dicom, j, isOdd);
+                console.log(`tagName: ${tagName} VR: ${dicomAttr[j].VR}`);
+                return [index, bareTag, tagName, isASCII, isException, changeEncoding, isSQ, isOdd];
+            }
         }
+    } else {
+        const [isASCII, isException, isSQ] = checkParameters(index, dicom, j=0, isOdd);
+        console.log(`tagName: ${"private"} VR: ${dicom.slice(index, index+2)}`);
+        return [index, bareTag, tagName="private", isASCII, isException, changeEncoding, isSQ, isOdd];
     }
 }
 
-
 function getValueLength(index, dicom, explicit = true,
-                        isException) {
-    /* read length (in bytes) of data stored in a given tag*/
+                        isException, isBigEndian) {
+    /* read length (in bytes) of data stored in a given tag
+    Possible encoding:
+    1. implicit - 4 bytes
+    2. explicit (works for most VRs) 2 bytes encode vr, following two encode length
+    3. explicit (for longer VRs listed as exceptions in checkParameters) 2 per VR, 2 blank, 4 per length
+    */
     let step = (explicit) ? [2, 4] : [0, 4];
     step = (isException && explicit) ? [4, 8] : step;
     hexTo2BytesPadding(index + step[0], dicom, index + step[1]);
-    const length = hexToInt(dicom.slice(index + step[0], index + step[1]).join("")); // in bytes
+    const length = hexToInt(dicom.slice(index + step[0], index + step[1]).join(""), isBigEndian); // in bytes
     console.log(`length: ${length}`);
     index += step[1];
     return [index, length];
 }
 
-function getValue(index, dicom, length, isASCII, element) {
+function getValue(index, dicom, length, isASCII, tagName, isBigEndian) {
     hexTo2BytesPadding(index, dicom, length);
     let value;
     if (isASCII) {
         value = dicom.slice(index, index + length).map(x => hexToASCII(x)).join('');
-    } else if (element == "Pixel Data") {
+    } else if (tagName == "Pixel Data") {
         value = dicom.slice(index, index + length).join('');
     } else {
-        value = hexToInt(dicom.slice(index, index + length).join(''));
+        value = hexToInt(dicom.slice(index, index + length).join(''), isBigEndian);
     }
     index += length;
     console.log(`value; ${value}`);
     return [index, value];
 }
 
+function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength){
+    let sqElemLength;
+    const closingTag = (isBigEndian) ? "FFFEE00D" : "FEFF0DE0";
+    index += 4; // omit SQ element's opening tag
+    [index, sqElemLength] = getValueLength(index, dicom, 0, 0, isBigEndian);
+    const endIndex = index + sqElemLength;
+    while(index<endIndex && dicom.slice(index, index+8)==closingTag){
+        [index, bareTag, tagName, isASCII, isException, changeEncoding,
+                isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
+        if(isSQ){
+            handleSQ(index, dicom, explicit, isException, isBigEndian);
+            return index;
+        }
+        [index, length] = getValueLength(index, dicom, explicit, isException, isBigEndian);
+        [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
+        dicomJSON[tagName] = value;
+    }
+    if(sqElemLength === 4294967295){
+        index += 8;
+    }
+    return index;
+}
+
+function handleSQ(index, dicom, explicit, isException, isBigEndian){
+    /* Decode Sequence Value Representation
+    */
+    let sqLength;
+    const closingTag = (isBigEndian) ? "FFFEE0DD" : "FEFFDDE0";
+    [index, length] = getValueLength(index, dicom,
+                        explicit, isException, isBigEndian);
+    undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
+    if(undefinedLength){
+        while(dicom.slice(index, index+8) != closingTag){
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+        }
+        index += 8;
+    } else{
+        const endIndex = index + sqLength;
+        while(index < endIndex){
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+        }
+    }
+    sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+    return index;
+}
+
 function dicomToJSON(dicom) {
-    let index = 132; //findPatientName(dicom); //132
-    let value, element, length, unsupported, changeEncoding;
-    let bigEndian = 0;
+    /*input: array storing dicom in hex string*/
+    let index = 132; // skip part identical for every dicom
+    let value, bareTag, tagName, isASCII, isException, length, unsupported, changeEncoding;
+    let isSQ = 0;
+    let isOdd = 0;
+    let isBigEndian = 0;
     let explicit = 1;
     let dicomJSON = {};
 
     while (index < dicom.length) {
         try {
-            [index, element, isASCII, isException, changeEncoding] = getElementName(index, dicom);
+            [index, bareTag, tagName, isASCII, isException, changeEncoding,
+            isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
+            console.log(index);
+            if(isSQ){
+              index = handleSQ(index, dicom, explicit, isException, isBigEndian);
+            }
         } catch (e) {
             alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
             return "Unsupported file format.";
         }
         if (changeEncoding) {
-            [bigEndian, explicit, unsupported] = getEncoding(dicomJSON[
-                "Transfer Syntax UID"]); // wykonywane za każdym razem, gdy element jest z innej grupy niż 0020 trzeba to zmienić
+            [isBigEndian, explicit, unsupported] = getEncoding(dicomJSON["Transfer Syntax UID"]);
+            // wykonywane za kaĹĽdym razem, gdy tag jest z innej grupy niĹĽ 0002 trzeba to zmieniÄ‡
             if (unsupported) {
                 return "Unsupported file format.";
             }
         }
-        [index, length] = getValueLength(index, dicom, explicit, isException);
-        [index, value] = getValue(index, dicom, length, isASCII, element);
-        dicomJSON[element] = value;
+        explicit = (isOdd) ? 1 : explicit;
+        [index, length] = getValueLength(index, dicom, explicit, isException, isBigEndian);
+        if(isOdd){
+            index += length;
+        } else {
+            [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
+            dicomJSON[tagName] = value;
+        }
     }
+
     return dicomJSON;
 }
 
@@ -282,7 +374,6 @@ function loadData() {
 
         let upload = document.getElementById('upload');
         upload.setAttribute('hidden', 'hidden');
-        console.log("CDF");
         let file = fileSelectButton.files[0];
         console.log(fileSelectButton.files);
         let reader = new FileReader();
