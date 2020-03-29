@@ -1,53 +1,26 @@
-<!DOCTYPE HTML>
-<HTML style="min-height: 100%;margin: 0;margin: 0;background-color:#222222 !important;">
-
-<HEAD>
-    <TITLE>Dicom viewer</TITLE>
-    <!-- UIkit CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/css/uikit.min.css"/>
-
-    <!-- UIkit JS -->
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit-icons.min.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-            crossorigin="anonymous"></script>
-
-</HEAD>
-
-<BODY class="uk-light  uk-background-secondary" style="height: 100%;margin: 0;margin: 0">
-  <h1 class = 'uk-text-center'>Database</h1>
+{% extends "radiato/base.html" %}
+{% block content %}
   <h3 class = 'uk-text-center'>Images from study</h3>
-
   <table class="uk-table uk-table-striped">
-
       <tbody>
         <thead>
-    <tr>
-        <th>Idx</th>
-        <th>Timestamp</th>
-        <th>Tumor Type</th>
-        <th>Tumor Size</th>
-        <th>Phase</th>
-        <th>Link</th>
-
-
-
-    </tr>
-</thead>
-        {% for id in ids%}
+            <tr>
+                <th>Timestamp</th>
+                <th>Tumor Type</th>
+                <th>Tumor Size</th>
+                <th>Phase</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        {% for record in records %}
           <tr>
-              <td>{{id['Idx']}}</td>
-              <td>{{id['Timestamp']}}</td>
-              <td>{{id['Tumor Type']}}</td>
-              <td>{{id['Tumor Size']}}</td>
-              <td>{{id['Phase']}}</td>
-              <td><a href="/preview/{{file}}/{{id['Idx']}}">link</a></td>
+              <td>{{record['timestamp']}}</td>
+              <td>{{record['tumor_type']}}</td>
+              <td>{{record['tumor_size']}}</td>
+              <td>{{record['phase']}}</td>
+              <td><a href="{{ url_for('db_viewer.preview', id=record['id']) }}">link</a></td>
           </tr>
           {%endfor%}
       </tbody>
   </table>
-</BODY>
-
-</HTML>
+{% endblock content %}

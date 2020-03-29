@@ -1,4 +1,4 @@
-area_width = 100;
+area_width = 130;
 
 function littleToBig(hex) {
     /*changes Little Endian to Big Endian*/
@@ -262,8 +262,8 @@ function autoFill(dicomJSON) {
     document.getElementById("Institution Name").value = (dicomJSON.hasOwnProperty("Institution Name")) ? dicomJSON["Institution Name"] : "Copernicus Zaspa";
     document.getElementById("Patient's Age").value = (dicomJSON.hasOwnProperty("Patient's Age")) ? dicomJSON["Patient's Age"] : "age";
     document.getElementById("Patient's Sex").value = (dicomJSON.hasOwnProperty("Patient's Sex")) ? $.trim(dicomJSON["Patient's Sex"]) : "M or F or O";
-    document.getElementById("Patient's Size").value = (dicomJSON.hasOwnProperty("Patient's Size")) ? dicomJSON["Patient's Size"] : "in meters";
-    document.getElementById("Patient's Weight").value = (dicomJSON.hasOwnProperty("Patient's Weight")) ? dicomJSON["Patient's Weight"] : "in kilograms";
+    document.getElementById("Patient's Size").value = (dicomJSON.hasOwnProperty("Patient's Size")) ? dicomJSON["Patient's Size"] : "";
+    document.getElementById("Patient's Weight").value = (dicomJSON.hasOwnProperty("Patient's Weight")) ? dicomJSON["Patient's Weight"] : "";
     document.getElementById("Series Date").value = (dicomJSON.hasOwnProperty("Series Date")) ? dicomJSON["Series Date"].replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3') : "YYYYMMDD";
 
 }
@@ -410,25 +410,30 @@ function dragElement(elmnt, rect) {
     }
 }
 
+function ISODateString(d) {
+    function pad(n) {return n<10 ? '0'+n : n}
+    return d.getUTCFullYear()+'-'
+         + pad(d.getUTCMonth()+1)+'-'
+         + pad(d.getUTCDate())+'T'
+         + pad(d.getUTCHours())+':'
+         + pad(d.getUTCMinutes())+':'
+         + pad(d.getUTCSeconds())+'Z'
+}
+
 function sendData() {
     const form = document.getElementById("Form");
     const sendDict = {};
+    let timeNow = new Date();
+    sendDict['Timestamp'] = ISODateString(timeNow);
     for (const field of document.getElementById("Form").elements) {
         sendDict[field.id] = field.value
     }
     sendDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width};
-    if( window.rectX == 0 || window.rectY  == 0){
-        alert('Please move the box over the tumor')
-        return
-    }
-    if( !sendDict['Tumor Size']){
-        alert('Please input tumor size')
-        return
-    }
 
     sendDict['Image'] = pixelDataArr;
     $.ajax({
-        url: '/send',
+        headers: { "X-CSRFToken": csrftoken },
+        url: '/viewer/sent/',
         type: "POST",
         data: JSON.stringify(sendDict),
         contentType: "application/json",
@@ -453,7 +458,7 @@ function sendData() {
         },
         error: function (request, status, error) {
             // request.responseText = "There was an error on the server. File wasn't sent.";
-            alert(request.responseText)
+            alert(request.statusText);
         },
     });
 }
