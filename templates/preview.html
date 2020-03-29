@@ -1,29 +1,5 @@
-<!DOCTYPE HTML>
-<HTML style="min-height: 100%;margin: 0;margin: 0;background-color:#222222 !important;">
-
-<HEAD>
-    <TITLE>Dicom viewer</TITLE>
-    <!-- UIkit CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/css/uikit.min.css"/>
-
-    <!-- UIkit JS -->
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.2.4/dist/js/uikit-icons.min.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-            crossorigin="anonymous"></script>
-
-</HEAD>
-
-<BODY class="uk-light  uk-background-secondary" style="height: 100%;margin: 0;margin: 0">
-  <h1 class = 'uk-text-center'>Database</h1>
-  <h3 class = 'uk-text-center'>Images preview</h3>
-  <canvas id="dicomImage" width="512" height="512" class="uk-margin-small">
-      Image cannot be displayed. Use better browser.
-  </canvas>
-  <div id="selectArea">
-</div>
+{% extends 'radiato/base.html' %}
+{% block head %}
 <style>
     #selectArea {
         position: absolute;
@@ -34,7 +10,6 @@
         height: 130px;
         opacity: 0.5;
     }
-
     canvas {
         padding-left: 0;
         padding-right: 0;
@@ -46,10 +21,21 @@
         min-width: 512px;
         min-height: 512px;
     }
-
 </style>
-  <script>
-    image_obj = JSON.parse(decodeHtmlEntity('{{record}}'))
+{% endblock head %}
+{% block content %}
+<h1 class = 'uk-text-center'>Database</h1>
+  <h3 class = 'uk-text-center'>Images preview</h3>
+  <canvas id="dicomImage" width="512" height="512" class="uk-margin-small">
+      Image cannot be displayed. Use better browser.
+  </canvas>
+  <div id="selectArea">
+</div>
+
+<script>
+    //.replace(/&#34;/g,'"')
+    decoded = decodeHtmlEntity('{{record}}');
+    image_obj = JSON.parse(decoded);
 
     function decodeHtmlEntity(x) {
       return x.replace(/&#(\d+);/g, function(match, dec) {
@@ -88,7 +74,7 @@
     }
     let canvas = document.getElementById('dicomImage');
     var ctx = canvas.getContext('2d');
-    pixToDispArr = adjustWindow(image_obj['Image'],40,400).map(x => x.toString(16).toUpperCase().padStart(2, "0"));
+    pixToDispArr = adjustWindow(image_obj['image'],40,400).map(x => x.toString(16).toUpperCase().padStart(2, "0"));
     pixToDispArr = pixToDispArr.map(x => "#" + x.repeat(3));
     displayImage(ctx, 512, 512,pixToDispArr );
 
@@ -97,9 +83,8 @@
     let selectArea = document.getElementById('selectArea');
     selectArea.removeAttribute('hidden');
 
-    selectArea.style.left = rect.left + image_obj["Area"]['x']  + "px";
-    selectArea.style.top = rect.top + image_obj["Area"]['y'] + "px";
+    selectArea.style.left = rect.left + image_obj["area"]['x']  + "px";
+    selectArea.style.top = rect.top + image_obj["area"]['y'] + "px";
   </script>
-</BODY>
 
-</HTML>
+{% endblock content %}
