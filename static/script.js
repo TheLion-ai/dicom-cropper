@@ -356,7 +356,7 @@ function autoFill(dicomJSON) {
     document.getElementById("Patient's Sex").value = (dicomJSON.hasOwnProperty("Patient's Sex")) ? $.trim(dicomJSON["Patient's Sex"]) : "M or F or O";
     document.getElementById("Patient's Size").value = (dicomJSON.hasOwnProperty("Patient's Size")) ? dicomJSON["Patient's Size"] : "in meters";
     document.getElementById("Patient's Weight").value = (dicomJSON.hasOwnProperty("Patient's Weight")) ? dicomJSON["Patient's Weight"] : "in kilograms";
-    document.getElementById("Series Date").value = (dicomJSON.hasOwnProperty("Series Date")) ? dicomJSON["Series Date"].replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3') : "YYYYMMDD";
+    document.getElementById("Study Date").value = (dicomJSON.hasOwnProperty("Study Date")) ? dicomJSON["Study Date"].replace(/(\d{4})(\d{2})(\d{2})/g, '$1-$2-$3') : "YYYYMMDD";
 
 }
 
