@@ -240,8 +240,8 @@ function dicomToJSON(dicom) {
 
 function pixelDataToSignedInt(pixelDataArr) {
     /* converts pixelData from u2 to signed integer
-input: array of hex strings
-output: array of numbers
+input: array of hex strings in u2
+output: array of numbers in signed integer
 */
     let bits = [];
     for (let i = 0; i < pixelDataArr.length; i++) {
@@ -262,7 +262,7 @@ output: array of numbers
 }
 
 function adjustWindow(pixToDispArr, windowCenter, windowWidth) {
-    /* Adjust the values to those the range important for diagnosis
+    /* Adjust the values to those important for diagnosis
 input: array of numbers
 output: array of numbers
 */
