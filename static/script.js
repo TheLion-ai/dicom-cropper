@@ -113,7 +113,7 @@ function getElementName(index, dicom, isBigEndian) {
         }
     } else {
         const [isASCII, isException, isSQ] = checkParameters(index, dicom, j=0, isOdd);
-        console.log(`tagName: ${"private"} VR: ${dicom.slice(index, index+2)}`);
+        console.log(`tagName: private VR: ${dicom.slice(index, index+2)}`);
         return [index, bareTag, tagName="private", isASCII, isException, changeEncoding, isSQ, isOdd];
     }
 }
@@ -156,7 +156,7 @@ function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLe
     index += 4; // omit SQ element's opening tag
     [index, sqElemLength] = getValueLength(index, dicom, 0, 0, isBigEndian);
     const endIndex = index + sqElemLength;
-    while(index<endIndex && dicom.slice(index, index+8)==closingTag){
+    while(index<endIndex && dicom.slice(index, index+8)!=closingTag){
         [index, bareTag, tagName, isASCII, isException, changeEncoding,
                 isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
         if(isSQ){
@@ -178,9 +178,9 @@ function handleSQ(index, dicom, explicit, isException, isBigEndian){
     */
     let sqLength;
     const closingTag = (isBigEndian) ? "FFFEE0DD" : "FEFFDDE0";
-    [index, length] = getValueLength(index, dicom,
+    [index, sqLength] = getValueLength(index, dicom,
                         explicit, isException, isBigEndian);
-    undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
+    let undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
     if(undefinedLength){
         while(dicom.slice(index, index+8) != closingTag){
             index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
