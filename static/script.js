@@ -381,8 +381,18 @@ function loadData() {
         // Closure to capture the file information.
         reader.onload = function (event) {
             let contents = event.target.result;
-            const typedArray1 = new Uint8Array(contents);
-            const dicm = Array.from(typedArray1, x => Number(x).toString(16));
+            const original_dicom = new Uint8Array(contents);
+            const memfs = [
+                    {
+                        name: "input.dcm",
+                        data: original_dicom
+                    }
+                ];
+            const result = gdcmFunc({
+                    MEMFS: memfs,
+                    arguments: ["-i", "input.dcm", "-o", "output.dcm", "-w"]
+                });
+            const dicm = Array.from(result.MEMFS[0].data, x => Number(x).toString(16));
             console.log(dicm);
             const dicomJSON = dicomToJSON(dicm);
             if (dicomJSON == "Unsupported file format.") {
