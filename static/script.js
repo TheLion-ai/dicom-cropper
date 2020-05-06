@@ -345,7 +345,13 @@ function showCoords(rect, x, y) {
 
     let value = window.pixelDataArr[y * 512 + x];
     let value2 = window.pixToDispArr[y * 512 + x];
+    window.croppedImage = [];
     let coords = "X coords: " + x + ", Y coords: " + y + "    " + value + "    " + value2;
+    for(let i=y-(area_width / 2); i<y+(area_width / 2); i++){
+        for(let j=x-(area_width / 2); j<x+(area_width / 2); j++){
+            croppedImage.push(pixelDataArr[i*512+j]);
+        }
+    }
     document.getElementById("coordinates").innerHTML = coords;
 }
 
@@ -518,8 +524,7 @@ function sendData() {
         sendDict[field.id] = field.value
     }
     sendDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width};
-
-    sendDict['Image'] = pixelDataArr;
+    sendDict['Image'] = croppedImage;
     $.ajax({
         url: '/send',
         type: "POST",
