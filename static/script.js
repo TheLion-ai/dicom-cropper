@@ -93,8 +93,8 @@ function getElementName(index, dicom, isBigEndian) {
     hexTo2BytesPadding(index, dicom, 4); // each tag name takes 4 bytes, 2 per group name and 2 per element name
     let group = dicom.slice(index, index + 2);
     let element = dicom.slice(index + 2, index + 4);
+    const bareTag = group.join("") + element.join("");
     const isOdd = (hexToInt(group.join(""), isBigEndian)%2 === 0) ? 0 : 1; // odd numbers stand for private tags
-    const bareTag = group + element;
     group = group.reverse().join(""); // reverse from Little Endian to Big Endian and convert to string // TODO: make it universal
     element = element.reverse().join("");
     let tag = "(" + group + "," + element + ")";
@@ -113,7 +113,7 @@ function getElementName(index, dicom, isBigEndian) {
         }
     } else {
         const [isASCII, isException, isSQ] = checkParameters(index, dicom, j=0, isOdd);
-        console.log(`tagName: ${"private"} VR: ${dicom.slice(index, index+2)}`);
+        console.log(`tagName: private VR: ${dicom.slice(index, index+2).map(x => hexToASCII(x)).join('')}`);
         return [index, bareTag, tagName="private", isASCII, isException, changeEncoding, isSQ, isOdd];
     }
 }
@@ -150,55 +150,56 @@ function getValue(index, dicom, length, isASCII, tagName, isBigEndian) {
     return [index, value];
 }
 
-function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength){
-    let sqElemLength;
+function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength, dicomJSON){
+    let sqElemLength, length, value, tagName, isASCII, changeEncoding, isSQ, isOdd;
     const closingTag = (isBigEndian) ? "FFFEE00D" : "FEFF0DE0";
     index += 4; // omit SQ element's opening tag
     [index, sqElemLength] = getValueLength(index, dicom, 0, 0, isBigEndian);
     const endIndex = index + sqElemLength;
-    while(index<endIndex && dicom.slice(index, index+8)==closingTag){
+    while(index<endIndex && dicom.slice(index, index+4)!=closingTag){
         [index, bareTag, tagName, isASCII, isException, changeEncoding,
                 isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
         if(isSQ){
-            handleSQ(index, dicom, explicit, isException, isBigEndian);
+            handleSQ(index, dicom, explicit, isException, isBigEndian, dicomJSON);
             return index;
         }
         [index, length] = getValueLength(index, dicom, explicit, isException, isBigEndian);
         [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
         dicomJSON[tagName] = value;
+        console.log(`index: ${index}`);
+        console.log(`endIndex: ${index}`);
     }
     if(sqElemLength === 4294967295){
-        index += 8;
+        index += 4;
     }
     return index;
 }
 
-function handleSQ(index, dicom, explicit, isException, isBigEndian){
+function handleSQ(index, dicom, explicit, isException, isBigEndian, dicomJSON){
     /* Decode Sequence Value Representation
     */
     let sqLength;
     const closingTag = (isBigEndian) ? "FFFEE0DD" : "FEFFDDE0";
-    [index, length] = getValueLength(index, dicom,
+    [index, sqLength] = getValueLength(index, dicom,
                         explicit, isException, isBigEndian);
-    undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
+    const undefinedLength = (sqLength === 4294967295) ? 1 : 0; // FFFF - length undefined, look for closing
     if(undefinedLength){
-        while(dicom.slice(index, index+8) != closingTag){
-            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+        while(dicom.slice(index, index+4) != closingTag){
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength, dicomJSON);
         }
-        index += 8;
+        index += 4;
     } else{
         const endIndex = index + sqLength;
         while(index < endIndex){
-            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
+            index = sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength, dicomJSON);
         }
     }
-    sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLength);
     return index;
 }
 
 function dicomToJSON(dicom) {
     /*input: array storing dicom in hex string*/
-    let index = 132; // skip part identical for every dicom
+    let index = 132; // skip header identical for every dicom
     let value, bareTag, tagName, isASCII, isException, length, unsupported, changeEncoding;
     let isSQ = 0;
     let isOdd = 0;
@@ -212,7 +213,7 @@ function dicomToJSON(dicom) {
             isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
             console.log(index);
             if(isSQ){
-              index = handleSQ(index, dicom, explicit, isException, isBigEndian);
+              index = handleSQ(index, dicom, explicit, isException, isBigEndian, dicomJSON);
             }
         } catch (e) {
             alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
@@ -317,7 +318,6 @@ function decodePixelData(pixelData, bitsAllocated, bitsStored, highBit, pixelRep
     }
     pixToDispArr = pixToDispArr.map(x => x.toString(16).toUpperCase().padStart(2, "0"));
     pixToDispArr = pixToDispArr.map(x => "#" + x.repeat(3));
-    //console.log(pixToDispArr.filter(x => x!="#000" && x!="#FFFFFF"));
     // CANT RETURN TWO ARRAYS - FIX IT!!!!!!!!!!
     window.pixelDataArr = pixelDataArr;
     window.pixToDispArr = pixToDispArr;
