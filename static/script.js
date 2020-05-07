@@ -157,9 +157,6 @@ function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLe
     [index, sqElemLength] = getValueLength(index, dicom, 0, 0, isBigEndian);
     const endIndex = index + sqElemLength;
     while(index<endIndex && dicom.slice(index, index+4).join("")!=closingTag){
-        console.log(dicom.slice(index, index+4).join(""));
-        console.log(dicom.slice(index, index+4).join(""));
-        console.log(closingTag);
         [index, bareTag, tagName, isASCII, isException, changeEncoding,
                 isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
         if(isSQ){
