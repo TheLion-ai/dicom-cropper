@@ -217,6 +217,7 @@ function dicomToJSON(dicom) {
             }
         } catch (e) {
             alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
+            location.reload();
             return "Unsupported file format.";
         }
         if (changeEncoding) {
@@ -388,7 +389,9 @@ function loadData() {
         reader.onload = function (event) {
             let contents = event.target.result;
             const original_dicom = new Uint8Array(contents);
-            const memfs = [
+            let dicm;
+            try{
+                const memfs = [
                     {
                         name: "input.dcm",
                         data: original_dicom
@@ -398,10 +401,18 @@ function loadData() {
                     MEMFS: memfs,
                     arguments: ["-i", "input.dcm", "-o", "output.dcm", "-w"]
                 });
-            const dicm = Array.from(result.MEMFS[0].data, x => Number(x).toString(16));
+            dicm = result.MEMFS[0].data;
+
+            } catch (error){
+                alert("Unsupported file format.\nMake sure your file is in Dicom (.dcm) format. Contact support for further details.");
+                location.reload();
+                return 0;
+            }
+            dicm = Array.from(dicm, x => Number(x).toString(16));
             console.log(dicm);
             const dicomJSON = dicomToJSON(dicm);
             if (dicomJSON == "Unsupported file format.") {
+                location.reload();
                 return 0;
             }
             console.log(dicomJSON);
