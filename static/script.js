@@ -167,7 +167,7 @@ function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLe
         [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
         dicomJSON[tagName] = value;
     }
-    //if(sqElemLength == 4294967295){
+
     if(dicom.slice(index, index+4).join("") == closingTag){
         index += 8;
     }
