@@ -381,7 +381,7 @@ function loadData() {
         let upload = document.getElementById('upload');
         upload.setAttribute('hidden', 'hidden');
         let file = fileSelectButton.files[0];
-        console.log(fileSelectButton.files);
+        window.fileName = fileSelectButton.files[0].name;
         let reader = new FileReader();
 
         // Closure to capture the file information.
@@ -525,6 +525,7 @@ function sendData() {
     }
     sendDict['Area'] = {'x': window.rectX, 'y': window.rectY, 'width': area_width};
     sendDict['Image'] = croppedImage;
+    sendDict['File Name'] = fileName;
     $.ajax({
         url: '/send',
         type: "POST",
