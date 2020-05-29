@@ -160,8 +160,8 @@ function sqElement(index, dicom, explicit, isException, isBigEndian, undefinedLe
         [index, bareTag, tagName, isASCII, isException, changeEncoding,
                 isSQ, isOdd] = getElementName(index, dicom, isBigEndian);
         if(isSQ){
-            handleSQ(index, dicom, explicit, isException, isBigEndian, dicomJSON);
-            return index;
+            index = handleSQ(index, dicom, explicit, isException, isBigEndian, dicomJSON);
+            continue;
         }
         [index, length] = getValueLength(index, dicom, explicit, isException, isBigEndian);
         [index, value] = getValue(index, dicom, length, isASCII, tagName, isBigEndian);
@@ -268,6 +268,8 @@ function adjustWindow(pixToDispArr, windowCenter, windowWidth) {
 input: array of numbers
 output: array of numbers
 */
+    windowCenter = (windowCenter) ? windowCenter : 610;
+    windowWidth = (windowWidth) ? windowWidth : 1221;
     const lowest = windowCenter - windowWidth / 2; // lowest possible pixel value, all pixels below this value will be represented as total black
     const highest = windowCenter + windowWidth / 2; // highest possible pixel value, all pixels above this value will be represented as white
     const range = Math.abs(lowest) + Math.abs(highest);
@@ -416,7 +418,10 @@ function loadData() {
                 return 0;
             }
             console.log(dicomJSON);
-            let pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"], dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"], dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"], dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
+            let pixToDispArr = decodePixelData(dicomJSON["Pixel Data"], dicomJSON["Bits Allocated"],
+                dicomJSON["Bits Stored"], dicomJSON["High Bit"], dicomJSON["Pixel Representation"],
+                dicomJSON["Rescale Slope"], dicomJSON["Rescale Intercept"], dicomJSON["Window Center"],
+                dicomJSON["Window Width"], dicomJSON["Photometric Interpretation"]);
             console.log(pixToDispArr);
             let canvas = document.getElementById('dicomImage');
             if (canvas.getContext) {
