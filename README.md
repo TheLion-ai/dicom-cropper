@@ -3,6 +3,9 @@ App for reading anonymizing cropping and uploading data to the server
 
 # Changelog
 
+ ## Version 3.0
+ * Added cornerstone.js.
+
  ## Version 2.0
  * Added private tag support.
  * Added SQ VR support.
